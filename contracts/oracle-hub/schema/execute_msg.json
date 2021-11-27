@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExecuteMsg",
+  "oneOf": [
+    {
+      "description": "Owner operation to update the owner parameter",
+      "type": "object",
+      "required": [
+        "update_owner"
+      ],
+      "properties": {
+        "update_owner": {
+          "type": "object",
+          "required": [
+            "owner"
+          ],
+          "properties": {
+            "owner": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Registers a new proxy contract for an asset_token",
+      "type": "object",
+      "required": [
+        "register_proxy"
+      ],
+      "properties": {
+        "register_proxy": {
+          "type": "object",
+          "required": [
+            "asset_token",
+            "proxy_addr"
+          ],
+          "properties": {
+            "asset_token": {
+              "type": "string"
+            },
+            "priority": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint8",
+              "minimum": 0.0
+            },
+            "proxy_addr": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Updates the priority paramter of an existing proxy",
+      "type": "object",
+      "required": [
+        "update_priority"
+      ],
+      "properties": {
+        "update_priority": {
+          "type": "object",
+          "required": [
+            "asset_token",
+            "priority",
+            "proxy_addr"
+          ],
+          "properties": {
+            "asset_token": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            },
+            "proxy_addr": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Remves an already whitelisted proxy",
+      "type": "object",
+      "required": [
+        "remove_proxy"
+      ],
+      "properties": {
+        "remove_proxy": {
+          "type": "object",
+          "required": [
+            "asset_token",
+            "proxy_addr"
+          ],
+          "properties": {
+            "asset_token": {
+              "type": "string"
+            },
+            "proxy_addr": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

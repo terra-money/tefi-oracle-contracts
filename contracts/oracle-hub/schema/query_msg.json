@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "description": "Queries contract configuration",
+      "type": "object",
+      "required": [
+        "config"
+      ],
+      "properties": {
+        "config": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Queries the information of all registered proxies for the provided asset_token",
+      "type": "object",
+      "required": [
+        "proxy_list"
+      ],
+      "properties": {
+        "proxy_list": {
+          "type": "object",
+          "required": [
+            "asset_token"
+          ],
+          "properties": {
+            "asset_token": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Queries the highes priority available price within the timeframe If timeframe is not provided, it will ignore the price age",
+      "type": "object",
+      "required": [
+        "price"
+      ],
+      "properties": {
+        "price": {
+          "type": "object",
+          "required": [
+            "asset_token"
+          ],
+          "properties": {
+            "asset_token": {
+              "type": "string"
+            },
+            "timeframe": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Queries all registered proxy prices for the provied asset_token",
+      "type": "object",
+      "required": [
+        "price_list"
+      ],
+      "properties": {
+        "price_list": {
+          "type": "object",
+          "required": [
+            "asset_token"
+          ],
+          "properties": {
+            "asset_token": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Anchor legacy query interface for oracle prices",
+      "type": "object",
+      "required": [
+        "legacy_price"
+      ],
+      "properties": {
+        "legacy_price": {
+          "type": "object",
+          "required": [
+            "base",
+            "quote"
+          ],
+          "properties": {
+            "base": {
+              "type": "string"
+            },
+            "quote": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}
