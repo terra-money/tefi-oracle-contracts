@@ -378,7 +378,6 @@ dependencies = [
 name = "oracle-proxy-band"
 version = "0.1.0"
 dependencies = [
- "cosmwasm-bignumber",
  "cosmwasm-schema 0.16.2",
  "cosmwasm-std",
  "cw-storage-plus",

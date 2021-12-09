@@ -1,9 +1,8 @@
-use cosmwasm_bignumber::{Decimal256, Uint256};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, QueryRequest, Response,
-    WasmQuery,
+    WasmQuery, Decimal, Uint128,
 };
 
 use cw2::set_contract_version;
@@ -11,7 +10,7 @@ use tefi_oracle::de::deserialize_key;
 use tefi_oracle::proxy::{ProxyPriceResponse, ProxyQueryMsg};
 
 use crate::msg::{
-    BandResponse, ConfigResponse, ExecuteMsg, GetReferenceData, InstantiateMsg, QueryMsg,
+    BandResponse, ConfigResponse, ExecuteMsg, BandMsg, InstantiateMsg, QueryMsg,
     SymbolMapResponse,
 };
 use crate::state::{Config, CONFIG, SYMBOLS};
@@ -198,13 +197,13 @@ pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse
 
     let res: BandResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: config.source_addr.to_string(),
-        msg: to_binary(&GetReferenceData {
+        msg: to_binary(&BandMsg::GetReferenceData {
             base_symbol: symbol,
             quote_symbol: config.quote_symbol,
         })?,
     }))?;
 
-    let parsed_rate: Decimal256 = Decimal256::from_ratio(res.rate, Uint256::from(1e18 as u128));
+    let parsed_rate: Decimal = Decimal::from_ratio(res.rate, Uint128::from(1e18 as u128));
 
     Ok(ProxyPriceResponse {
         rate: parsed_rate.into(),
@@ -216,22 +215,24 @@ pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse
 mod tests {
     use std::str::FromStr;
 
+    use cosmwasm_std::{Decimal, Uint128};
+
     use super::*;
 
     #[test]
     fn test_parse_band() {
         let band_res = BandResponse {
-            rate: Uint256::from_str("1082780049999000000000").unwrap(),
+            rate: Uint128::from_str("1082780049999000000000").unwrap(),
             last_updated_base: 1637951384,
-            last_updated_quote: 18446744073709552000,
+            last_updated_quote: u64::MAX,
         };
 
-        let parsed_rate: Decimal256 =
-            Decimal256::from_ratio(band_res.rate, Uint256::from(1e18 as u128));
+        let parsed_rate: Decimal =
+            Decimal::from_ratio(band_res.rate, Uint128::from(1e18 as u128));
 
         assert_eq!(
             parsed_rate,
-            Decimal256::from_str("1082.780049999000000000").unwrap()
+            Decimal::from_str("1082.780049999000000000").unwrap()
         )
     }
 }
