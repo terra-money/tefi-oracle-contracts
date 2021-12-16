@@ -24,6 +24,29 @@
       "additionalProperties": false
     },
     {
+      "description": "Owner operation to update the max_proxies_per_asset parameter",
+      "type": "object",
+      "required": [
+        "update_max_proxies"
+      ],
+      "properties": {
+        "update_max_proxies": {
+          "type": "object",
+          "required": [
+            "max_proxies_per_asset"
+          ],
+          "properties": {
+            "max_proxies_per_asset": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Registers a new proxy contract for an asset_token",
       "type": "object",
       "required": [

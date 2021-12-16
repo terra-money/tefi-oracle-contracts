@@ -4,11 +4,17 @@
   "type": "object",
   "required": [
     "base_denom",
+    "max_proxies_per_asset",
     "owner"
   ],
   "properties": {
     "base_denom": {
       "type": "string"
+    },
+    "max_proxies_per_asset": {
+      "type": "integer",
+      "format": "uint8",
+      "minimum": 0.0
     },
     "owner": {
       "type": "string"

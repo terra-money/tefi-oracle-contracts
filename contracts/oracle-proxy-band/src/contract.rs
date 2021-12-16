@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, QueryRequest, Response,
-    WasmQuery, Decimal, Uint128,
+    to_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Order, QueryRequest,
+    Response, Uint128, WasmQuery,
 };
 
 use cw2::set_contract_version;
@@ -10,8 +10,7 @@ use tefi_oracle::de::deserialize_key;
 use tefi_oracle::proxy::{ProxyPriceResponse, ProxyQueryMsg};
 
 use crate::msg::{
-    BandResponse, ConfigResponse, ExecuteMsg, BandMsg, InstantiateMsg, QueryMsg,
-    SymbolMapResponse,
+    BandMsg, BandResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, SymbolMapResponse,
 };
 use crate::state::{Config, CONFIG, SYMBOLS};
 use crate::ContractError;
@@ -206,7 +205,7 @@ pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse
     let parsed_rate: Decimal = Decimal::from_ratio(res.rate, Uint128::from(1e18 as u128));
 
     Ok(ProxyPriceResponse {
-        rate: parsed_rate.into(),
+        rate: parsed_rate,
         last_updated: res.last_updated_base as u64,
     })
 }
@@ -227,8 +226,7 @@ mod tests {
             last_updated_quote: u64::MAX,
         };
 
-        let parsed_rate: Decimal =
-            Decimal::from_ratio(band_res.rate, Uint128::from(1e18 as u128));
+        let parsed_rate: Decimal = Decimal::from_ratio(band_res.rate, Uint128::from(1e18 as u128));
 
         assert_eq!(
             parsed_rate,

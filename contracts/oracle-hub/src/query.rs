@@ -42,7 +42,7 @@ pub fn query_price(
     timeframe: Option<u64>,
 ) -> Result<PriceResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let mut proxy_list: ProxyList = ASSETS
+    let proxy_list: ProxyList = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
@@ -51,7 +51,7 @@ pub fn query_price(
         None => 0u64,
     };
 
-    for (_prio, proxy_addr) in proxy_list.by_priority() {
+    for (_prio, proxy_addr) in proxy_list.proxies {
         let proxy_price: ProxyPriceResponse =
             match query_proxy_asset_price(&deps.querier, &proxy_addr, &asset_token) {
                 Ok(res) => res,
@@ -76,12 +76,12 @@ pub fn query_price_list(
     asset_token: String,
 ) -> Result<PriceListResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let mut proxy_list: ProxyList = ASSETS
+    let proxy_list: ProxyList = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
     let price_list: Vec<(u8, PriceQueryResult)> = proxy_list
-        .by_priority()
+        .proxies
         .iter()
         .map(|item| {
             let res = match query_proxy_asset_price(&deps.querier, &item.1, &asset_token) {
@@ -110,12 +110,12 @@ pub fn query_legacy_price(
     }
 
     let asset_token: Addr = deps.api.addr_validate(&base)?;
-    let mut proxy_list: ProxyList = ASSETS
+    let proxy_list: ProxyList = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
     // TODO: instead of taking highest priority proxy, set a default valid timeframe
-    let highest_prio_proxy: Addr = proxy_list.by_priority().first().unwrap().1.clone();
+    let highest_prio_proxy: Addr = proxy_list.proxies.first().unwrap().1.clone();
 
     let proxy_price: ProxyPriceResponse =
         query_proxy_asset_price(&deps.querier, &highest_prio_proxy, &asset_token)?;

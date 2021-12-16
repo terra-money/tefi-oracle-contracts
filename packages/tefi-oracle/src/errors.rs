@@ -15,6 +15,9 @@ pub enum ContractError {
     #[error("The proxy address is not registered")]
     ProxyNotRegistered {},
 
+    #[error("This asset exceeds the maximum proxies per asset ({max})")]
+    TooManyProxies { max: u8 },
+
     #[error("The asset token is not registered")]
     AssetNotRegistered {},
 

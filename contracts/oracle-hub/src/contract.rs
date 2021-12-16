@@ -5,8 +5,12 @@ use cw2::set_contract_version;
 
 use tefi_oracle::hub::{HubExecuteMsg, HubQueryMsg, InstantiateMsg};
 
-use crate::handle::{register_proxy, remove_proxy, update_owner, update_priority};
-use crate::query::{query_config, query_legacy_price, query_price, query_proxy_list};
+use crate::handle::{
+    register_proxy, remove_proxy, update_max_proxies, update_owner, update_priority,
+};
+use crate::query::{
+    query_config, query_legacy_price, query_price, query_price_list, query_proxy_list,
+};
 use crate::state::{Config, CONFIG};
 use crate::ContractError;
 
@@ -26,6 +30,7 @@ pub fn instantiate(
     let config = Config {
         owner: deps.api.addr_validate(&msg.owner)?,
         base_denom: msg.base_denom,
+        max_proxies_per_asset: msg.max_proxies_per_asset,
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -41,6 +46,9 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         HubExecuteMsg::UpdateOwner { owner } => update_owner(deps, info, owner),
+        HubExecuteMsg::UpdateMaxProxies {
+            max_proxies_per_asset,
+        } => update_max_proxies(deps, info, max_proxies_per_asset),
         HubExecuteMsg::RegisterProxy {
             asset_token,
             proxy_addr,
@@ -67,7 +75,7 @@ pub fn query(deps: Deps, env: Env, msg: HubQueryMsg) -> Result<Binary, ContractE
             asset_token,
             timeframe,
         } => to_binary(&query_price(deps, env, asset_token, timeframe)?),
-        HubQueryMsg::PriceList { asset_token } => to_binary(&query_proxy_list(deps, asset_token)?),
+        HubQueryMsg::PriceList { asset_token } => to_binary(&query_price_list(deps, asset_token)?),
         HubQueryMsg::LegacyPrice { base, quote } => {
             to_binary(&query_legacy_price(deps, base, quote)?)
         }

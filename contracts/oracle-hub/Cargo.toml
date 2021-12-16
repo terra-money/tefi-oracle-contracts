@@ -8,6 +8,14 @@ description = "Oracle Hub contract for Terra token assets"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[profile.release]
+rpath = false
+lto = true
+overflow-checks = true
+opt-level = 3
+debug = false
+debug-assertions = false
+
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
@@ -25,4 +33,4 @@ thiserror = { version = "1.0.23" }
 cosmwasm-bignumber = "2.2.0"
 
 [dev-dependencies]
-cosmwasm-schema = { version = "1.0.0-beta" }
+cosmwasm-schema = { version = "0.16.2" }

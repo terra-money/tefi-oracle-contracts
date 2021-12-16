@@ -8,6 +8,7 @@ use cosmwasm_std::Decimal;
 pub struct InstantiateMsg {
     pub owner: String,
     pub base_denom: String,
+    pub max_proxies_per_asset: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -15,6 +16,8 @@ pub struct InstantiateMsg {
 pub enum HubExecuteMsg {
     /// Owner operation to update the owner parameter
     UpdateOwner { owner: String },
+    /// Owner operation to update the max_proxies_per_asset parameter
+    UpdateMaxProxies { max_proxies_per_asset: u8 },
     /// Registers a new proxy contract for an asset_token
     RegisterProxy {
         asset_token: String,
@@ -57,6 +60,7 @@ pub enum HubQueryMsg {
 pub struct ConfigResponse {
     pub owner: String,
     pub base_denom: String,
+    pub max_proxies_per_asset: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

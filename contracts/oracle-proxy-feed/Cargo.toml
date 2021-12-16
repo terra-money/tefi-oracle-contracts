@@ -8,6 +8,14 @@ description = "Oracle Proxy feed"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[profile.release]
+rpath = false
+lto = true
+overflow-checks = true
+opt-level = 3
+debug = false
+debug-assertions = false
+
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports

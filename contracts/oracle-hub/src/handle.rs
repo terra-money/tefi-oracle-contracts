@@ -27,6 +27,26 @@ pub fn update_owner(
     Ok(Response::default())
 }
 
+/// @dev Updates the max_proxies_per_asset parameter
+/// @param owner : New maximum number of proxies per asset
+pub fn update_max_proxies(
+    deps: DepsMut,
+    info: MessageInfo,
+    max_proxies_per_asset: u8,
+) -> Result<Response, ContractError> {
+    let mut config: Config = CONFIG.load(deps.storage)?;
+
+    if !config.is_owner(&info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    config.max_proxies_per_asset = max_proxies_per_asset;
+
+    CONFIG.save(deps.storage, &config)?;
+
+    Ok(Response::default())
+}
+
 /// @dev Registers a new price proxy contract for an asset_token
 /// @param asset_token : Asset token address. Native assets are not supported
 /// @param proxy_addr : Proxy contract address
@@ -55,7 +75,15 @@ pub fn register_proxy(
             proxies: vec![],
         });
 
+    if proxy_list.proxies.len() >= config.max_proxies_per_asset as usize {
+        return Err(ContractError::TooManyProxies {
+            max: config.max_proxies_per_asset,
+        });
+    }
+
     proxy_list.proxies.push((priority, proxy_addr));
+    // sort before storing
+    proxy_list.sort_by_priority();
 
     ASSETS.save(deps.storage, &asset_token, &proxy_list)?;
 
@@ -87,6 +115,8 @@ pub fn update_priority(
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
     proxy_list.update_proxy_priority(&proxy_addr, priority)?;
+    // sort before storing
+    proxy_list.sort_by_priority();
 
     ASSETS.save(deps.storage, &asset_token, &proxy_list)?;
 

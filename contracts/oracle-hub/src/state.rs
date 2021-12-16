@@ -16,6 +16,7 @@ pub struct Config {
     // base denom has no utily in the contract, only for information purpose
     // e.g only proxies compatible with the base_denom should be registered
     pub base_denom: String,
+    pub max_proxies_per_asset: u8,
 }
 
 impl Config {
@@ -23,6 +24,7 @@ impl Config {
         ConfigResponse {
             owner: self.owner.to_string(),
             base_denom: self.base_denom.to_string(),
+            max_proxies_per_asset: self.max_proxies_per_asset,
         }
     }
 
@@ -40,11 +42,9 @@ pub struct ProxyList {
 }
 
 impl ProxyList {
-    /// @dev Returns a copy of the proxy list sorted by priority
-    pub fn by_priority(&mut self) -> Vec<(u8, Addr)> {
+    /// @dev Sorts the proxy list by priority
+    pub fn sort_by_priority(&mut self) {
         self.proxies.sort_by_key(|item| item.0);
-
-        self.proxies.clone()
     }
 
     /// @dev Checks if the provided proxy address is already registered

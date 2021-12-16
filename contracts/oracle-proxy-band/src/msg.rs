@@ -65,5 +65,5 @@ pub enum BandMsg {
     GetReferenceData {
         base_symbol: String,
         quote_symbol: String,
-    }
+    },
 }

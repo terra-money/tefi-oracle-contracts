@@ -120,12 +120,6 @@ pub fn feed_prices(
     info: MessageInfo,
     prices: Vec<(String, Decimal)>,
 ) -> Result<Response, ContractError> {
-    let config: Config = CONFIG.load(deps.storage)?;
-
-    if !config.is_owner(&info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
-
     let mut attributes: Vec<Attribute> = vec![attr("action", "price_feed")];
     for price in prices {
         attributes.push(attr("asset", price.0.to_string()));
