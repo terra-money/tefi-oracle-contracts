@@ -6,7 +6,7 @@ use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
 
 const DEFAULT_PRIORITY: u8 = 10;
 
-/// @dev Updates the owner addres
+/// @dev Updates the owner address
 /// @param owner : New owner address
 pub fn update_owner(
     deps: DepsMut,
@@ -123,7 +123,7 @@ pub fn update_priority(
     Ok(Response::default())
 }
 
-/// @dev Remvoes an existing price proxy for an asset_token
+/// @dev Removes an existing price proxy for an asset_token
 /// @param asset_token : Asset token address. Native assets are not supported
 /// @param proxy_addr : Proxy contract address
 pub fn remove_proxy(

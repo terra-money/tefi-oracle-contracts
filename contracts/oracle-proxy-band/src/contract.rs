@@ -75,7 +75,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner addres
+/// @dev Updates the owner address
 /// @param owner : New owner address
 pub fn update_owner(
     deps: DepsMut,
@@ -181,7 +181,7 @@ pub fn query_symbol_map(
     Ok(SymbolMapResponse { map })
 }
 
-/// @dev Queries the price by fetching it from band source using the previously mapped symbol and converts to the standard
+/// @dev Queries the price by fetching it from Band source using the previously mapped symbol and converts to the standard format
 /// @param asset_token : Asset token address
 pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;

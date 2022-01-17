@@ -70,7 +70,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner addres
+/// @dev Updates the owner address
 /// @param owner : New owner address
 pub fn update_owner(
     deps: DepsMut,
@@ -91,7 +91,7 @@ pub fn update_owner(
     Ok(Response::default())
 }
 
-/// @dev Registers chainlink price sources
+/// @dev Registers Chainlink price sources
 /// @param sources : Array of mappings (asset_token, chainlink_source)
 pub fn set_sources(
     deps: DepsMut,
@@ -114,7 +114,7 @@ pub fn set_sources(
     Ok(Response::default())
 }
 
-/// @dev Removes an existing chainlink price source for an asset_token
+/// @dev Removes an existing Chainlink price source for an asset_token
 /// @param asset_token : Address of the asset_token to remove
 pub fn remove_source(
     deps: DepsMut,
@@ -144,7 +144,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(config.as_res())
 }
 
-/// @dev Queries the registered chainlink prices sources
+/// @dev Queries the registered Chainlink prices sources
 /// @param asset_token : (Optional) Asset token address, if not provided, returns all sources
 pub fn query_sources(
     deps: Deps,
@@ -175,7 +175,7 @@ pub fn query_sources(
     Ok(SourcesResponse { sources })
 }
 
-/// @dev Queries last price feed for the asset_token by fetching from chainlink source and converts to standard format
+/// @dev Queries last price feed for the asset_token by fetching from Chainlink source and converts to standard format
 /// @param asset_token : Asset token address
 pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
