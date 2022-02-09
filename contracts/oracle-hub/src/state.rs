@@ -13,7 +13,7 @@ pub const ASSETS: Map<&Addr, ProxyList> = Map::new("proxy_list");
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {
     pub owner: Addr,
-    // base denom has no utily in the contract, only for information purpose
+    // base denom has no utility in the contract, only for information purpose
     // e.g only proxies compatible with the base_denom should be registered
     pub base_denom: String,
     pub max_proxies_per_asset: u8,
@@ -76,7 +76,7 @@ impl ProxyList {
 
     /// @dev Updates the priority of the provided proxy address
     /// @param proxy_addr : address of the proxy to update
-    /// @oaram priority : new priority value
+    /// @param priority : new priority value
     pub fn update_proxy_priority(
         &mut self,
         proxy_addr: &Addr,

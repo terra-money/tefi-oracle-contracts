@@ -67,7 +67,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner addres
+/// @dev Updates the owner address
 /// @param owner : New owner address
 pub fn update_owner(
     deps: DepsMut,
