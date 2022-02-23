@@ -16,7 +16,7 @@ pub enum ExecuteMsg {
     },
     /// Used to register new asset or to update feeder
     RegisterFeed {
-        asset_token: String,
+        symbol: String,
         feeder: String,
     },
     FeedPrices {
@@ -29,7 +29,7 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     Base(ProxyQueryMsg),
     Config {},
-    Feeder { asset_token: String },
+    Feeder { symbol: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -39,6 +39,6 @@ pub struct ConfigResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct FeederResponse {
-    pub asset_token: String,
+    pub symbol: String,
     pub feeder: String,
 }

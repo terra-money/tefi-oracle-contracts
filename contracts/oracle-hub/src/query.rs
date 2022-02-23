@@ -1,15 +1,20 @@
-use cosmwasm_std::{Addr, Deps, Env};
+use cosmwasm_std::{Deps, Env, Order, StdError, StdResult};
+use cw_storage_plus::Bound;
 use tefi_oracle::{
+    de::deserialize_key,
     errors::ContractError,
     hub::{
-        ConfigResponse, PriceListResponse, PriceQueryResult, PriceResponse,
+        AssetSymbolMapResponse, ConfigResponse, PriceListResponse, PriceQueryResult, PriceResponse,
         ProxyWhitelistResponse, SourcesResponse,
     },
     proxy::ProxyPriceResponse,
-    querier::query_proxy_asset_price,
+    querier::query_proxy_symbol_price,
 };
 
-use crate::state::{Config, ProxyWhitelist, Sources, SOURCES, CONFIG, WHITELIST};
+use crate::state::{Config, ProxyWhitelist, Sources, ASSET_SYMBOL_MAP, CONFIG, SOURCES, WHITELIST};
+
+const DEFAULT_PAGINATION_LIMIT: u32 = 10u32;
+const MAX_PAGINATION_LIMIT: u32 = 30u32;
 
 /// @dev Queries the contract configuration
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
@@ -25,30 +30,62 @@ pub fn query_proxy_whitelist(deps: Deps) -> Result<ProxyWhitelistResponse, Contr
     Ok(whitelist.as_res())
 }
 
-/// @dev Queries the list of registered proxies for an asset_token
-/// @param asset_token : Asset token address. Native assets are not supported
-pub fn query_sources(deps: Deps, asset_token: String) -> Result<SourcesResponse, ContractError> {
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
+/// @dev Queries the list of registered proxies for an asset_token or symbol
+/// @param asset_token : Asset token address
+/// @param symbol : Asset symbol
+pub fn query_sources(
+    deps: Deps,
+    asset_token: Option<String>,
+    symbol: Option<String>,
+) -> Result<SourcesResponse, ContractError> {
+    let symbol = match symbol {
+        Some(v) => v,
+        None => {
+            if let Some(asset_token) = asset_token {
+                ASSET_SYMBOL_MAP.load(deps.storage, asset_token.as_bytes())?
+            } else {
+                return Err(ContractError::Std(StdError::generic_err(
+                    "symbol or asset_token must be provided",
+                )));
+            }
+        }
+    };
+
     let sources_list: Sources = SOURCES
-        .load(deps.storage, &asset_token)
-        .map_err(|_| ContractError::AssetNotRegistered {})?;
+        .load(deps.storage, symbol.as_bytes())
+        .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     Ok(sources_list.as_res())
 }
 
-/// @dev Queries the available price with highest priority
-/// @param asset_token : Asset token address. Native assets are not supported
+/// @dev Queries the available price with highest priority.
+/// `asset_token` or `symbol` must be provided
+/// @param asset_token : Asset token address
+/// @param symbol : Asset symbol
 /// @param timeframe : Valid price timeframe in seconds
 pub fn query_price(
     deps: Deps,
     env: Env,
-    asset_token: String,
+    asset_token: Option<String>,
+    symbol: Option<String>,
     timeframe: Option<u64>,
 ) -> Result<PriceResponse, ContractError> {
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
+    let symbol = match symbol {
+        Some(v) => v,
+        None => {
+            if let Some(asset_token) = asset_token {
+                ASSET_SYMBOL_MAP.load(deps.storage, asset_token.as_bytes())?
+            } else {
+                return Err(ContractError::Std(StdError::generic_err(
+                    "symbol or asset_token must be provided",
+                )));
+            }
+        }
+    };
+
     let sources: Sources = SOURCES
-        .load(deps.storage, &asset_token)
-        .map_err(|_| ContractError::AssetNotRegistered {})?;
+        .load(deps.storage, symbol.as_bytes())
+        .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     let time_threshold = match timeframe {
         Some(v) => env.block.time.minus_seconds(v).seconds(),
@@ -57,7 +94,7 @@ pub fn query_price(
 
     for (_prio, proxy_addr) in sources.proxies {
         let proxy_price: ProxyPriceResponse =
-            match query_proxy_asset_price(&deps.querier, &proxy_addr, &asset_token) {
+            match query_proxy_symbol_price(&deps.querier, &proxy_addr, symbol.clone()) {
                 Ok(res) => res,
                 Err(..) => continue,
             };
@@ -73,22 +110,36 @@ pub fn query_price(
     Err(ContractError::PriceNotAvailable {})
 }
 
-/// @dev Queries prices from all registered proxies for an asset_token
-/// @param asset_token : Asset token address. Native assets are not supported
+/// @dev Queries prices from all registered proxies for an asset_token or symbol
+/// @param asset_token : Asset token address
+/// @param symbol : Asset symbol
 pub fn query_price_list(
     deps: Deps,
-    asset_token: String,
+    asset_token: Option<String>,
+    symbol: Option<String>,
 ) -> Result<PriceListResponse, ContractError> {
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
+    let symbol = match symbol {
+        Some(v) => v,
+        None => {
+            if let Some(asset_token) = asset_token {
+                ASSET_SYMBOL_MAP.load(deps.storage, asset_token.as_bytes())?
+            } else {
+                return Err(ContractError::Std(StdError::generic_err(
+                    "symbol or asset_token must be provided",
+                )));
+            }
+        }
+    };
+
     let sources: Sources = SOURCES
-        .load(deps.storage, &asset_token)
-        .map_err(|_| ContractError::AssetNotRegistered {})?;
+        .load(deps.storage, symbol.as_bytes())
+        .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     let price_list: Vec<(u8, PriceQueryResult)> = sources
         .proxies
         .iter()
         .map(|item| {
-            let res = match query_proxy_asset_price(&deps.querier, &item.1, &asset_token) {
+            let res = match query_proxy_symbol_price(&deps.querier, &item.1, symbol.clone()) {
                 Ok(price_res) => PriceQueryResult::Success(price_res.into()),
                 Err(..) => PriceQueryResult::Fail,
             };
@@ -98,4 +149,28 @@ pub fn query_price_list(
         .collect();
 
     Ok(PriceListResponse { price_list })
+}
+
+//
+pub fn query_asset_symbol_map(
+    deps: Deps,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> Result<AssetSymbolMapResponse, ContractError> {
+    let limit = limit
+        .unwrap_or(DEFAULT_PAGINATION_LIMIT)
+        .min(MAX_PAGINATION_LIMIT) as usize;
+    let start = start_after.map(|addr| Bound::exclusive(addr.as_bytes()));
+
+    let map: Vec<(String, String)> = ASSET_SYMBOL_MAP
+        .range(deps.storage, start, None, Order::Ascending)
+        .take(limit)
+        .map(|item| {
+            let (k, address) = item?;
+            let symbol = deserialize_key::<String>(k).unwrap();
+            Ok((symbol, address))
+        })
+        .collect::<StdResult<Vec<(String, String)>>>()?;
+
+    Ok(AssetSymbolMapResponse { map })
 }

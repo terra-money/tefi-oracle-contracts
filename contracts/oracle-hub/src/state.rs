@@ -8,8 +8,12 @@ use crate::ContractError;
 use tefi_oracle::hub::{ConfigResponse, ProxyWhitelistResponse, SourcesResponse};
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const SOURCES: Map<&Addr, Sources> = Map::new("sources");
+// set price sources for each symbol
+pub const SOURCES: Map<&[u8], Sources> = Map::new("sources");
+// whitelist of proxies that can be added as sources
 pub const WHITELIST: Item<ProxyWhitelist> = Item::new("whitelist");
+// map of asset cw20 contract addresses to symbol
+pub const ASSET_SYMBOL_MAP: Map<&[u8], String> = Map::new("asset_symbol_map");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {
@@ -17,7 +21,7 @@ pub struct Config {
     // base denom has no utility in the contract, only for information purpose
     // e.g only proxies compatible with the base_denom should be registered
     pub base_denom: String,
-    pub max_proxies_per_asset: u8,
+    pub max_proxies_per_symbol: u8,
 }
 
 impl Config {
@@ -25,7 +29,7 @@ impl Config {
         ConfigResponse {
             owner: self.owner.to_string(),
             base_denom: self.base_denom.to_string(),
-            max_proxies_per_asset: self.max_proxies_per_asset,
+            max_proxies_per_symbol: self.max_proxies_per_symbol,
         }
     }
 
@@ -65,7 +69,7 @@ impl ProxyWhitelist {
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Sources {
-    pub asset_token: Addr,
+    pub symbol: String,
     pub proxies: Vec<(u8, Addr)>,
 }
 
@@ -83,7 +87,7 @@ impl Sources {
 
     pub fn as_res(&self) -> SourcesResponse {
         SourcesResponse {
-            asset_token: self.asset_token.to_string(),
+            symbol: self.symbol.to_string(),
             proxies: self
                 .proxies
                 .iter()

@@ -1,5 +1,5 @@
 use crate::{
-    state::{Config, ProxyWhitelist, Sources, SOURCES, CONFIG, WHITELIST},
+    state::{Config, ProxyWhitelist, Sources, ASSET_SYMBOL_MAP, CONFIG, SOURCES, WHITELIST},
     ContractError,
 };
 use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
@@ -31,7 +31,7 @@ pub fn update_owner(
 pub fn update_max_proxies(
     deps: DepsMut,
     info: MessageInfo,
-    max_proxies_per_asset: u8,
+    max_proxies_per_symbol: u8,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
@@ -39,21 +39,21 @@ pub fn update_max_proxies(
         return Err(ContractError::Unauthorized {});
     }
 
-    config.max_proxies_per_asset = max_proxies_per_asset;
+    config.max_proxies_per_symbol = max_proxies_per_symbol;
 
     CONFIG.save(deps.storage, &config)?;
 
     Ok(Response::default())
 }
 
-/// @dev Registers a new price proxy contract for an asset_token
-/// @param asset_token : Asset token address. Native assets are not supported
+/// @dev Registers a new price proxy contract for a symbol
+/// @param symbol : Symbol of the asset
 /// @param proxy_addr : Proxy contract address
 /// @param priority : Priority number (lowest value has higher priority)
 pub fn register_source(
     deps: DepsMut,
     info: MessageInfo,
-    asset_token: String,
+    symbol: String,
     proxy_addr: String,
     priority: Option<u8>,
 ) -> Result<Response, ContractError> {
@@ -63,18 +63,19 @@ pub fn register_source(
         return Err(ContractError::Unauthorized {});
     }
 
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
     let priority: u8 = priority.unwrap_or(DEFAULT_PRIORITY);
 
-    let mut sources: Sources = SOURCES.load(deps.storage, &asset_token).unwrap_or(Sources {
-        asset_token: asset_token.clone(),
-        proxies: vec![],
-    });
+    let mut sources: Sources = SOURCES
+        .load(deps.storage, symbol.as_bytes())
+        .unwrap_or(Sources {
+            symbol: symbol.clone(),
+            proxies: vec![],
+        });
 
-    if sources.proxies.len() >= config.max_proxies_per_asset as usize {
-        return Err(ContractError::TooManyProxiesForAsset {
-            max: config.max_proxies_per_asset,
+    if sources.proxies.len() >= config.max_proxies_per_symbol as usize {
+        return Err(ContractError::TooManyProxiesForSymbol {
+            max: config.max_proxies_per_symbol,
         });
     }
 
@@ -82,19 +83,19 @@ pub fn register_source(
     // sort before storing
     sources.sort_by_priority();
 
-    SOURCES.save(deps.storage, &asset_token, &sources)?;
+    SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
 
     Ok(Response::default())
 }
 
 /// @dev Changes the priority value for an existing price proxy
-/// @param asset_token : Asset token address. Native assets are not supported
+/// @param symbol : Symbol of the asset
 /// @param proxy_addr : Proxy contract address
 /// @param priority : New priority number (lowest value has higher priority)
 pub fn update_source_priority(
     deps: DepsMut,
     info: MessageInfo,
-    asset_token: String,
+    symbol: String,
     proxy_addr: String,
     priority: u8,
 ) -> Result<Response, ContractError> {
@@ -104,29 +105,28 @@ pub fn update_source_priority(
         return Err(ContractError::Unauthorized {});
     }
 
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
 
     let mut sources: Sources = SOURCES
-        .load(deps.storage, &asset_token)
-        .map_err(|_| ContractError::AssetNotRegistered {})?;
+        .load(deps.storage, symbol.as_bytes())
+        .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     sources.update_proxy_priority(&proxy_addr, priority)?;
     // sort before storing
     sources.sort_by_priority();
 
-    SOURCES.save(deps.storage, &asset_token, &sources)?;
+    SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
 
     Ok(Response::default())
 }
 
 /// @dev Removes an existing price proxy for an asset_token
-/// @param asset_token : Asset token address. Native assets are not supported
+/// @param symbol : Symbol of the asset
 /// @param proxy_addr : Proxy contract address
 pub fn remove_source(
     deps: DepsMut,
     info: MessageInfo,
-    asset_token: String,
+    symbol: String,
     proxy_addr: String,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
@@ -135,16 +135,15 @@ pub fn remove_source(
         return Err(ContractError::Unauthorized {});
     }
 
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
 
     let mut sources: Sources = SOURCES
-        .load(deps.storage, &asset_token)
-        .map_err(|_| ContractError::AssetNotRegistered {})?;
+        .load(deps.storage, symbol.as_bytes())
+        .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     sources.remove(&proxy_addr)?;
 
-    SOURCES.save(deps.storage, &asset_token, &sources)?;
+    SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
 
     Ok(Response::default())
 }
@@ -200,6 +199,25 @@ pub fn remove_proxy(
     whitelist.remove(&proxy_addr)?;
 
     WHITELIST.save(deps.storage, &whitelist)?;
+
+    Ok(Response::default())
+}
+
+///
+pub fn insert_asset_symbol_map(
+    deps: DepsMut,
+    info: MessageInfo,
+    items: Vec<(String, String)>,
+) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    if !config.is_owner(&info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    for item in items {
+        ASSET_SYMBOL_MAP.save(deps.storage, item.0.as_bytes(), &item.1)?;
+    }
 
     Ok(Response::default())
 }

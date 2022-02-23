@@ -5,17 +5,15 @@ use crate::proxy::{ProxyBaseQuery, ProxyPriceResponse, ProxyQueryMsg};
 
 /// @dev Queries an asset token price from the orcle proxy contract, price is given in the base denomination
 /// @param proxy_addr : Proxy contract address
-/// @param asset_token : Asset token address. Native assets are not supported
-pub fn query_proxy_asset_price(
+/// @param symbol : Symbol of the asset
+pub fn query_proxy_symbol_price(
     querier: &QuerierWrapper,
     proxy_addr: &Addr,
-    asset_token: &Addr,
+    symbol: String,
 ) -> StdResult<ProxyPriceResponse> {
     let res: ProxyPriceResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: String::from(proxy_addr),
-        msg: to_binary(&ProxyBaseQuery::Base(ProxyQueryMsg::Price {
-            asset_token: String::from(asset_token),
-        }))?,
+        msg: to_binary(&ProxyBaseQuery::Base(ProxyQueryMsg::Price { symbol }))?,
     }))?;
 
     Ok(res)

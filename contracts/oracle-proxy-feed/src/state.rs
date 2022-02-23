@@ -8,8 +8,8 @@ use tefi_oracle::proxy::ProxyPriceResponse;
 use crate::msg::ConfigResponse;
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const FEEDERS: Map<&Addr, Addr> = Map::new("feeders");
-pub const PRICES: Map<&Addr, PriceInfo> = Map::new("prices");
+pub const FEEDERS: Map<&[u8], Addr> = Map::new("feeders");
+pub const PRICES: Map<&[u8], PriceInfo> = Map::new("prices");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {

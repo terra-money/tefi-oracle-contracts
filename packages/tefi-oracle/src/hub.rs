@@ -10,7 +10,7 @@ pub const MAX_WHITELISTED_PROXIES: u8 = 30;
 pub struct InstantiateMsg {
     pub owner: String,
     pub base_denom: String,
-    pub max_proxies_per_asset: u8,
+    pub max_proxies_per_symbol: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -18,29 +18,30 @@ pub struct InstantiateMsg {
 pub enum HubExecuteMsg {
     /// Owner operation to update the owner parameter
     UpdateOwner { owner: String },
-    /// Owner operation to update the max_proxies_per_asset parameter
-    UpdateMaxProxies { max_proxies_per_asset: u8 },
+    /// Owner operation to update the max_proxies_per_symbol parameter
+    UpdateMaxProxies { max_proxies_per_symbol: u8 },
     ///
     RegisterSource {
-        asset_token: String,
+        symbol: String,
         proxy_addr: String,
         priority: Option<u8>,
     },
     /// Updates the priority paramter of an existing proxy
     UpdateSourcePriority {
-        asset_token: String,
+        symbol: String,
         proxy_addr: String,
         priority: u8,
     },
-    /// Remves an already whitelisted proxy
-    RemoveSource {
-        asset_token: String,
-        proxy_addr: String,
-    },
+    /// Remves an already registered proxy
+    RemoveSource { symbol: String, proxy_addr: String },
     ///
     WhitelistProxy { proxy_addr: String },
     ///
     RemoveProxy { proxy_addr: String },
+    ///
+    InsertAssetSymbolMap {
+        items: Vec<(String, String)>, // (address, symbol)
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -52,21 +53,36 @@ pub enum HubQueryMsg {
     ProxyWhitelist {},
     /// Queries the information of all registered proxies for the provided asset_token
     Sources { asset_token: String },
+    /// Queries the information of all registered proxies for the provided symbol
+    SourcesBySymbol { symbol: String },
     /// Queries the highes priority available price within the timeframe
     /// If timeframe is not provided, it will ignore the price age
     Price {
         asset_token: String,
         timeframe: Option<u64>,
     },
+    /// Queries the highes priority available price within the timeframe
+    /// If timeframe is not provided, it will ignore the price age
+    PriceBySymbol {
+        symbol: String,
+        timeframe: Option<u64>,
+    },
     /// Queries all registered proxy prices for the provied asset_token
     PriceList { asset_token: String },
+    /// Queries all registered proxy prices for the provied symbol
+    PriceListBySymbol { symbol: String },
+    ///
+    AssetSymbolMap {
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub owner: String,
     pub base_denom: String,
-    pub max_proxies_per_asset: u8,
+    pub max_proxies_per_symbol: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -88,7 +104,7 @@ pub struct PriceListResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct SourcesResponse {
-    pub asset_token: String,
+    pub symbol: String,
     pub proxies: Vec<(u8, String)>,
 }
 
@@ -104,4 +120,9 @@ impl From<crate::proxy::ProxyPriceResponse> for PriceResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ProxyWhitelistResponse {
     pub proxies: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct AssetSymbolMapResponse {
+    pub map: Vec<(String, String)>, // address, symbol
 }

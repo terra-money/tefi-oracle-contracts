@@ -18,14 +18,14 @@ pub enum ContractError {
     #[error("The proxy address is not whitelisted")]
     ProxyNotWhitelisted {},
 
-    #[error("This asset exceeds the maximum proxies per asset ({max})")]
-    TooManyProxiesForAsset { max: u8 },
+    #[error("This asset exceeds the maximum proxies per symbol ({max})")]
+    TooManyProxiesForSymbol { max: u8 },
 
     #[error("Can not whiteliste more than maximum ({max})")]
     TooManyWhitelistedProxies { max: u8 },
 
-    #[error("The asset token is not registered")]
-    AssetNotRegistered {},
+    #[error("The symbol is not registered")]
+    SymbolNotRegistered {},
 
     #[error("Quote asset not supported")]
     InvalidQuote {},

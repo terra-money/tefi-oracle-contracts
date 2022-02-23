@@ -41,10 +41,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::UpdateOwner { owner } => update_owner(deps, info, owner),
-        ExecuteMsg::RegisterFeed {
-            asset_token,
-            feeder,
-        } => register_feed(deps, info, asset_token, feeder),
+        ExecuteMsg::RegisterFeed { symbol, feeder } => register_feed(deps, info, symbol, feeder),
         ExecuteMsg::FeedPrices { prices } => feed_prices(deps, env, info, prices),
     }
 }
@@ -53,10 +50,10 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     let res = match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Feeder { asset_token } => to_binary(&query_feeder(deps, asset_token)?),
+        QueryMsg::Feeder { symbol } => to_binary(&query_feeder(deps, symbol)?),
         // Implementation of the queries required by proxy contract standard
         QueryMsg::Base(proxy_msg) => match proxy_msg {
-            ProxyQueryMsg::Price { asset_token } => to_binary(&query_price(deps, asset_token)?),
+            ProxyQueryMsg::Price { symbol } => to_binary(&query_price(deps, symbol)?),
         },
     };
 
@@ -89,12 +86,12 @@ pub fn update_owner(
 }
 
 /// @dev Registers a new feeder or updates an existing one
-/// @param asset_token : Asset token address
+/// @param symbol : Asset symbol
 /// @param feeder : Address authorized to feed prices for the asset_token
 pub fn register_feed(
     deps: DepsMut,
     info: MessageInfo,
-    asset_token: String,
+    symbol: String,
     feeder: String,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
@@ -103,17 +100,16 @@ pub fn register_feed(
         return Err(ContractError::Unauthorized {});
     }
 
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let feeder: Addr = deps.api.addr_validate(&feeder)?;
 
     // overwrite if exists
-    FEEDERS.save(deps.storage, &asset_token, &feeder)?;
+    FEEDERS.save(deps.storage, symbol.as_bytes(), &feeder)?;
 
     Ok(Response::default())
 }
 
 /// @dev Feeder operation to feed prices to one or multiple asset tokens
-/// @param prices : Array of price feeds (asset_token, price)
+/// @param prices : Array of price feeds (symbol, price)
 pub fn feed_prices(
     deps: DepsMut,
     env: Env,
@@ -122,16 +118,15 @@ pub fn feed_prices(
 ) -> Result<Response, ContractError> {
     let mut attributes: Vec<Attribute> = vec![attr("action", "price_feed")];
     for price in prices {
-        attributes.push(attr("asset", price.0.to_string()));
+        attributes.push(attr("symbol", price.0.to_string()));
         attributes.push(attr("price", price.1.to_string()));
 
         // Check feeder permission
-        let asset_token: Addr = deps.api.addr_validate(&price.0)?;
         let registered_feeder: Addr =
             FEEDERS
-                .load(deps.storage, &asset_token)
+                .load(deps.storage, price.0.as_bytes())
                 .map_err(|_| ContractError::ProxyError {
-                    reason: "There is no feeder registered for the provided asset".to_string(),
+                    reason: "There is no feeder registered for the provided symbol".to_string(),
                 })?;
 
         if registered_feeder.ne(&info.sender) {
@@ -140,7 +135,7 @@ pub fn feed_prices(
 
         PRICES.save(
             deps.storage,
-            &asset_token,
+            price.0.as_bytes(),
             &PriceInfo {
                 price: price.1,
                 last_updated_time: env.block.time.seconds(),
@@ -163,33 +158,29 @@ pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
 }
 
 /// @dev Queries the registered feeder for an asset_token
-/// @param asset_token : Asset token address
-pub fn query_feeder(deps: Deps, asset_token: String) -> Result<FeederResponse, ContractError> {
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-
+/// @param symbol : Asset symbol
+pub fn query_feeder(deps: Deps, symbol: String) -> Result<FeederResponse, ContractError> {
     let registered_feeder: Addr =
         FEEDERS
-            .load(deps.storage, &asset_token)
+            .load(deps.storage, symbol.as_bytes())
             .map_err(|_| ContractError::ProxyError {
-                reason: "There is no feeder registered for the provided asset".to_string(),
+                reason: "There is no feeder registered for the provided symbol".to_string(),
             })?;
 
     Ok(FeederResponse {
-        asset_token: asset_token.to_string(),
+        symbol,
         feeder: registered_feeder.to_string(),
     })
 }
 
-/// @dev Queries last price feed for the asset_token
-/// @param asset_token : Asset token address
-pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse, ContractError> {
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-
+/// @dev Queries last price feed for the symbol
+/// @param symbol : Asset symbol
+pub fn query_price(deps: Deps, symbol: String) -> Result<ProxyPriceResponse, ContractError> {
     let price_info: PriceInfo =
         PRICES
-            .load(deps.storage, &asset_token)
+            .load(deps.storage, symbol.as_bytes())
             .map_err(|_| ContractError::ProxyError {
-                reason: "There is no price feed for the requested asset_token".to_string(),
+                reason: "There is no price feed for the requested symbol".to_string(),
             })?;
 
     Ok(price_info.as_res())

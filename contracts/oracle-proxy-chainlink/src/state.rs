@@ -7,7 +7,7 @@ use cw_storage_plus::{Item, Map};
 use crate::msg::ConfigResponse;
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const SOURCES: Map<&Addr, Addr> = Map::new("sources");
+pub const SOURCES: Map<&[u8], Addr> = Map::new("sources");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {

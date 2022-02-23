@@ -6,11 +6,11 @@ use cw2::set_contract_version;
 use tefi_oracle::hub::{HubExecuteMsg, HubQueryMsg, InstantiateMsg};
 
 use crate::handle::{
-    register_source, remove_proxy, remove_source, update_max_proxies, update_owner,
-    update_source_priority, whitelist_proxy,
+    insert_asset_symbol_map, register_source, remove_proxy, remove_source, update_max_proxies,
+    update_owner, update_source_priority, whitelist_proxy,
 };
 use crate::query::{
-    query_config, query_price, query_price_list, query_proxy_whitelist,
+    query_asset_symbol_map, query_config, query_price, query_price_list, query_proxy_whitelist,
     query_sources,
 };
 use crate::state::{Config, CONFIG};
@@ -32,7 +32,7 @@ pub fn instantiate(
     let config = Config {
         owner: deps.api.addr_validate(&msg.owner)?,
         base_denom: msg.base_denom,
-        max_proxies_per_asset: msg.max_proxies_per_asset,
+        max_proxies_per_symbol: msg.max_proxies_per_symbol,
     };
     CONFIG.save(deps.storage, &config)?;
 
@@ -49,24 +49,24 @@ pub fn execute(
     match msg {
         HubExecuteMsg::UpdateOwner { owner } => update_owner(deps, info, owner),
         HubExecuteMsg::UpdateMaxProxies {
-            max_proxies_per_asset,
-        } => update_max_proxies(deps, info, max_proxies_per_asset),
+            max_proxies_per_symbol,
+        } => update_max_proxies(deps, info, max_proxies_per_symbol),
         HubExecuteMsg::RegisterSource {
-            asset_token,
+            symbol,
             proxy_addr,
             priority,
-        } => register_source(deps, info, asset_token, proxy_addr, priority),
+        } => register_source(deps, info, symbol, proxy_addr, priority),
         HubExecuteMsg::UpdateSourcePriority {
-            asset_token,
+            symbol,
             proxy_addr,
             priority,
-        } => update_source_priority(deps, info, asset_token, proxy_addr, priority),
-        HubExecuteMsg::RemoveSource {
-            asset_token,
-            proxy_addr,
-        } => remove_source(deps, info, asset_token, proxy_addr),
+        } => update_source_priority(deps, info, symbol, proxy_addr, priority),
+        HubExecuteMsg::RemoveSource { symbol, proxy_addr } => {
+            remove_source(deps, info, symbol, proxy_addr)
+        }
         HubExecuteMsg::WhitelistProxy { proxy_addr } => whitelist_proxy(deps, info, proxy_addr),
         HubExecuteMsg::RemoveProxy { proxy_addr } => remove_proxy(deps, info, proxy_addr),
+        HubExecuteMsg::InsertAssetSymbolMap { items } => insert_asset_symbol_map(deps, info, items),
     }
 }
 
@@ -75,12 +75,28 @@ pub fn query(deps: Deps, env: Env, msg: HubQueryMsg) -> Result<Binary, ContractE
     let res = match msg {
         HubQueryMsg::Config {} => to_binary(&query_config(deps)?),
         HubQueryMsg::ProxyWhitelist {} => to_binary(&query_proxy_whitelist(deps)?),
-        HubQueryMsg::Sources { asset_token } => to_binary(&query_sources(deps, asset_token)?),
+        HubQueryMsg::Sources { asset_token } => {
+            to_binary(&query_sources(deps, Some(asset_token), None)?)
+        }
+        HubQueryMsg::SourcesBySymbol { symbol } => {
+            to_binary(&query_sources(deps, None, Some(symbol))?)
+        }
         HubQueryMsg::Price {
             asset_token,
             timeframe,
-        } => to_binary(&query_price(deps, env, asset_token, timeframe)?),
-        HubQueryMsg::PriceList { asset_token } => to_binary(&query_price_list(deps, asset_token)?),
+        } => to_binary(&query_price(deps, env, Some(asset_token), None, timeframe)?),
+        HubQueryMsg::PriceBySymbol { symbol, timeframe } => {
+            to_binary(&query_price(deps, env, None, Some(symbol), timeframe)?)
+        }
+        HubQueryMsg::PriceList { asset_token } => {
+            to_binary(&query_price_list(deps, Some(asset_token), None)?)
+        }
+        HubQueryMsg::PriceListBySymbol { symbol } => {
+            to_binary(&query_price_list(deps, None, Some(symbol))?)
+        }
+        HubQueryMsg::AssetSymbolMap { start_after, limit } => {
+            to_binary(&query_asset_symbol_map(deps, start_after, limit)?)
+        }
     };
 
     res.map_err(|err| err.into())
