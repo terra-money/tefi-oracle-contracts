@@ -1,5 +1,5 @@
 use crate::{
-    state::{Config, ProxyWhitelist, Sources, ASSETS, CONFIG, WHITELIST},
+    state::{Config, ProxyWhitelist, Sources, SOURCES, CONFIG, WHITELIST},
     ContractError,
 };
 use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
@@ -67,7 +67,7 @@ pub fn register_source(
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
     let priority: u8 = priority.unwrap_or(DEFAULT_PRIORITY);
 
-    let mut sources: Sources = ASSETS.load(deps.storage, &asset_token).unwrap_or(Sources {
+    let mut sources: Sources = SOURCES.load(deps.storage, &asset_token).unwrap_or(Sources {
         asset_token: asset_token.clone(),
         proxies: vec![],
     });
@@ -82,7 +82,7 @@ pub fn register_source(
     // sort before storing
     sources.sort_by_priority();
 
-    ASSETS.save(deps.storage, &asset_token, &sources)?;
+    SOURCES.save(deps.storage, &asset_token, &sources)?;
 
     Ok(Response::default())
 }
@@ -107,7 +107,7 @@ pub fn update_source_priority(
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
 
-    let mut sources: Sources = ASSETS
+    let mut sources: Sources = SOURCES
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
@@ -115,7 +115,7 @@ pub fn update_source_priority(
     // sort before storing
     sources.sort_by_priority();
 
-    ASSETS.save(deps.storage, &asset_token, &sources)?;
+    SOURCES.save(deps.storage, &asset_token, &sources)?;
 
     Ok(Response::default())
 }
@@ -138,13 +138,13 @@ pub fn remove_source(
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
 
-    let mut sources: Sources = ASSETS
+    let mut sources: Sources = SOURCES
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
     sources.remove(&proxy_addr)?;
 
-    ASSETS.save(deps.storage, &asset_token, &sources)?;
+    SOURCES.save(deps.storage, &asset_token, &sources)?;
 
     Ok(Response::default())
 }

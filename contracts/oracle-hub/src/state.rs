@@ -8,7 +8,7 @@ use crate::ContractError;
 use tefi_oracle::hub::{ConfigResponse, ProxyWhitelistResponse, SourcesResponse};
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const ASSETS: Map<&Addr, Sources> = Map::new("sources");
+pub const SOURCES: Map<&Addr, Sources> = Map::new("sources");
 pub const WHITELIST: Item<ProxyWhitelist> = Item::new("whitelist");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

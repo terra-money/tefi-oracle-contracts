@@ -10,7 +10,7 @@ use crate::handle::{
     update_source_priority, whitelist_proxy,
 };
 use crate::query::{
-    query_config, query_legacy_price, query_price, query_price_list, query_proxy_whitelist,
+    query_config, query_price, query_price_list, query_proxy_whitelist,
     query_sources,
 };
 use crate::state::{Config, CONFIG};
@@ -81,9 +81,6 @@ pub fn query(deps: Deps, env: Env, msg: HubQueryMsg) -> Result<Binary, ContractE
             timeframe,
         } => to_binary(&query_price(deps, env, asset_token, timeframe)?),
         HubQueryMsg::PriceList { asset_token } => to_binary(&query_price_list(deps, asset_token)?),
-        HubQueryMsg::LegacyPrice { base, quote } => {
-            to_binary(&query_legacy_price(deps, base, quote)?)
-        }
     };
 
     res.map_err(|err| err.into())

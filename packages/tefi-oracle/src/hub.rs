@@ -1,4 +1,3 @@
-use cosmwasm_bignumber::Decimal256;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -61,8 +60,6 @@ pub enum HubQueryMsg {
     },
     /// Queries all registered proxy prices for the provied asset_token
     PriceList { asset_token: String },
-    /// Anchor legacy query interface for oracle prices
-    LegacyPrice { base: String, quote: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -107,11 +104,4 @@ impl From<crate::proxy::ProxyPriceResponse> for PriceResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ProxyWhitelistResponse {
     pub proxies: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct LegacyPriceResponse {
-    pub rate: Decimal256,
-    pub last_updated_base: u64,
-    pub last_updated_quote: u64,
 }

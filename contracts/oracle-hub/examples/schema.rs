@@ -4,7 +4,7 @@ use std::fs::create_dir_all;
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 
 use tefi_oracle::hub::{
-    ConfigResponse, HubExecuteMsg, HubQueryMsg, InstantiateMsg, LegacyPriceResponse,
+    ConfigResponse, HubExecuteMsg, HubQueryMsg, InstantiateMsg,
     PriceListResponse, PriceResponse, ProxyWhitelistResponse,
 };
 
@@ -21,5 +21,4 @@ fn main() {
     export_schema(&schema_for!(ProxyWhitelistResponse), &out_dir);
     export_schema(&schema_for!(PriceResponse), &out_dir);
     export_schema(&schema_for!(PriceListResponse), &out_dir);
-    export_schema(&schema_for!(LegacyPriceResponse), &out_dir);
 }

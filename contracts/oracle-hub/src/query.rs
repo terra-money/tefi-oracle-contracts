@@ -2,14 +2,14 @@ use cosmwasm_std::{Addr, Deps, Env};
 use tefi_oracle::{
     errors::ContractError,
     hub::{
-        ConfigResponse, LegacyPriceResponse, PriceListResponse, PriceQueryResult, PriceResponse,
+        ConfigResponse, PriceListResponse, PriceQueryResult, PriceResponse,
         ProxyWhitelistResponse, SourcesResponse,
     },
     proxy::ProxyPriceResponse,
     querier::query_proxy_asset_price,
 };
 
-use crate::state::{Config, ProxyWhitelist, Sources, ASSETS, CONFIG, WHITELIST};
+use crate::state::{Config, ProxyWhitelist, Sources, SOURCES, CONFIG, WHITELIST};
 
 /// @dev Queries the contract configuration
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
@@ -29,7 +29,7 @@ pub fn query_proxy_whitelist(deps: Deps) -> Result<ProxyWhitelistResponse, Contr
 /// @param asset_token : Asset token address. Native assets are not supported
 pub fn query_sources(deps: Deps, asset_token: String) -> Result<SourcesResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let sources_list: Sources = ASSETS
+    let sources_list: Sources = SOURCES
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
@@ -46,7 +46,7 @@ pub fn query_price(
     timeframe: Option<u64>,
 ) -> Result<PriceResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let sources: Sources = ASSETS
+    let sources: Sources = SOURCES
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
@@ -80,7 +80,7 @@ pub fn query_price_list(
     asset_token: String,
 ) -> Result<PriceListResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let sources: Sources = ASSETS
+    let sources: Sources = SOURCES
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
@@ -98,35 +98,4 @@ pub fn query_price_list(
         .collect();
 
     Ok(PriceListResponse { price_list })
-}
-
-/// @dev Queries the price with highest priority and returns it in legacy struct format
-/// @param quote : Ignored, should always be base_denom
-/// @param base : Asset token address. Native assets are not supported
-pub fn query_legacy_price(
-    deps: Deps,
-    base: String,
-    quote: String,
-) -> Result<LegacyPriceResponse, ContractError> {
-    let config: Config = CONFIG.load(deps.storage)?;
-    if quote.ne(&config.base_denom) {
-        return Err(ContractError::InvalidQuote {});
-    }
-
-    let asset_token: Addr = deps.api.addr_validate(&base)?;
-    let sources: Sources = ASSETS
-        .load(deps.storage, &asset_token)
-        .map_err(|_| ContractError::AssetNotRegistered {})?;
-
-    // TODO: instead of taking highest priority proxy, set a default valid timeframe
-    let highest_prio_proxy: Addr = sources.proxies.first().unwrap().1.clone();
-
-    let proxy_price: ProxyPriceResponse =
-        query_proxy_asset_price(&deps.querier, &highest_prio_proxy, &asset_token)?;
-
-    Ok(LegacyPriceResponse {
-        rate: proxy_price.rate.into(),
-        last_updated_base: proxy_price.last_updated,
-        last_updated_quote: u64::MAX,
-    })
 }
