@@ -3,13 +3,13 @@ use tefi_oracle::{
     errors::ContractError,
     hub::{
         ConfigResponse, LegacyPriceResponse, PriceListResponse, PriceQueryResult, PriceResponse,
-        ProxyListResponse,
+        ProxyWhitelistResponse, SourcesResponse,
     },
     proxy::ProxyPriceResponse,
     querier::query_proxy_asset_price,
 };
 
-use crate::state::{Config, ProxyList, ASSETS, CONFIG};
+use crate::state::{Config, ProxyWhitelist, Sources, ASSETS, CONFIG, WHITELIST};
 
 /// @dev Queries the contract configuration
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
@@ -18,18 +18,22 @@ pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     Ok(config.as_res())
 }
 
+///
+pub fn query_proxy_whitelist(deps: Deps) -> Result<ProxyWhitelistResponse, ContractError> {
+    let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
+
+    Ok(whitelist.as_res())
+}
+
 /// @dev Queries the list of registered proxies for an asset_token
 /// @param asset_token : Asset token address. Native assets are not supported
-pub fn query_proxy_list(
-    deps: Deps,
-    asset_token: String,
-) -> Result<ProxyListResponse, ContractError> {
+pub fn query_sources(deps: Deps, asset_token: String) -> Result<SourcesResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let proxy_list: ProxyList = ASSETS
+    let sources_list: Sources = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
-    Ok(proxy_list.as_res())
+    Ok(sources_list.as_res())
 }
 
 /// @dev Queries the available price with highest priority
@@ -42,7 +46,7 @@ pub fn query_price(
     timeframe: Option<u64>,
 ) -> Result<PriceResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let proxy_list: ProxyList = ASSETS
+    let sources: Sources = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
@@ -51,7 +55,7 @@ pub fn query_price(
         None => 0u64,
     };
 
-    for (_prio, proxy_addr) in proxy_list.proxies {
+    for (_prio, proxy_addr) in sources.proxies {
         let proxy_price: ProxyPriceResponse =
             match query_proxy_asset_price(&deps.querier, &proxy_addr, &asset_token) {
                 Ok(res) => res,
@@ -76,11 +80,11 @@ pub fn query_price_list(
     asset_token: String,
 ) -> Result<PriceListResponse, ContractError> {
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    let proxy_list: ProxyList = ASSETS
+    let sources: Sources = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
-    let price_list: Vec<(u8, PriceQueryResult)> = proxy_list
+    let price_list: Vec<(u8, PriceQueryResult)> = sources
         .proxies
         .iter()
         .map(|item| {
@@ -110,12 +114,12 @@ pub fn query_legacy_price(
     }
 
     let asset_token: Addr = deps.api.addr_validate(&base)?;
-    let proxy_list: ProxyList = ASSETS
+    let sources: Sources = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
     // TODO: instead of taking highest priority proxy, set a default valid timeframe
-    let highest_prio_proxy: Addr = proxy_list.proxies.first().unwrap().1.clone();
+    let highest_prio_proxy: Addr = sources.proxies.first().unwrap().1.clone();
 
     let proxy_price: ProxyPriceResponse =
         query_proxy_asset_price(&deps.querier, &highest_prio_proxy, &asset_token)?;

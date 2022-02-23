@@ -12,11 +12,17 @@ pub enum ContractError {
     #[error("Sender is not authorized to execute this operation")]
     Unauthorized {},
 
-    #[error("The proxy address is not registered")]
+    #[error("The proxy is not registered as a source for this asset")]
     ProxyNotRegistered {},
 
+    #[error("The proxy address is not whitelisted")]
+    ProxyNotWhitelisted {},
+
     #[error("This asset exceeds the maximum proxies per asset ({max})")]
-    TooManyProxies { max: u8 },
+    TooManyProxiesForAsset { max: u8 },
+
+    #[error("Can not whiteliste more than maximum ({max})")]
+    TooManyWhitelistedProxies { max: u8 },
 
     #[error("The asset token is not registered")]
     AssetNotRegistered {},

@@ -47,13 +47,12 @@
       "additionalProperties": false
     },
     {
-      "description": "Registers a new proxy contract for an asset_token",
       "type": "object",
       "required": [
-        "register_proxy"
+        "register_source"
       ],
       "properties": {
-        "register_proxy": {
+        "register_source": {
           "type": "object",
           "required": [
             "asset_token",
@@ -83,10 +82,10 @@
       "description": "Updates the priority paramter of an existing proxy",
       "type": "object",
       "required": [
-        "update_priority"
+        "update_source_priority"
       ],
       "properties": {
-        "update_priority": {
+        "update_source_priority": {
           "type": "object",
           "required": [
             "asset_token",
@@ -114,10 +113,10 @@
       "description": "Remves an already whitelisted proxy",
       "type": "object",
       "required": [
-        "remove_proxy"
+        "remove_source"
       ],
       "properties": {
-        "remove_proxy": {
+        "remove_source": {
           "type": "object",
           "required": [
             "asset_token",
@@ -127,6 +126,46 @@
             "asset_token": {
               "type": "string"
             },
+            "proxy_addr": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "whitelist_proxy"
+      ],
+      "properties": {
+        "whitelist_proxy": {
+          "type": "object",
+          "required": [
+            "proxy_addr"
+          ],
+          "properties": {
+            "proxy_addr": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "remove_proxy"
+      ],
+      "properties": {
+        "remove_proxy": {
+          "type": "object",
+          "required": [
+            "proxy_addr"
+          ],
+          "properties": {
             "proxy_addr": {
               "type": "string"
             }

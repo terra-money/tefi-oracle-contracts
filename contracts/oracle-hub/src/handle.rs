@@ -1,10 +1,9 @@
 use crate::{
-    state::{Config, ProxyList, ASSETS, CONFIG},
+    state::{Config, ProxyWhitelist, Sources, ASSETS, CONFIG, WHITELIST},
     ContractError,
 };
 use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
-
-const DEFAULT_PRIORITY: u8 = 10;
+use tefi_oracle::hub::{DEFAULT_PRIORITY, MAX_WHITELISTED_PROXIES};
 
 /// @dev Updates the owner address
 /// @param owner : New owner address
@@ -51,7 +50,7 @@ pub fn update_max_proxies(
 /// @param asset_token : Asset token address. Native assets are not supported
 /// @param proxy_addr : Proxy contract address
 /// @param priority : Priority number (lowest value has higher priority)
-pub fn register_proxy(
+pub fn register_source(
     deps: DepsMut,
     info: MessageInfo,
     asset_token: String,
@@ -68,24 +67,22 @@ pub fn register_proxy(
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
     let priority: u8 = priority.unwrap_or(DEFAULT_PRIORITY);
 
-    let mut proxy_list: ProxyList = ASSETS
-        .load(deps.storage, &asset_token)
-        .unwrap_or(ProxyList {
-            asset_token: asset_token.clone(),
-            proxies: vec![],
-        });
+    let mut sources: Sources = ASSETS.load(deps.storage, &asset_token).unwrap_or(Sources {
+        asset_token: asset_token.clone(),
+        proxies: vec![],
+    });
 
-    if proxy_list.proxies.len() >= config.max_proxies_per_asset as usize {
-        return Err(ContractError::TooManyProxies {
+    if sources.proxies.len() >= config.max_proxies_per_asset as usize {
+        return Err(ContractError::TooManyProxiesForAsset {
             max: config.max_proxies_per_asset,
         });
     }
 
-    proxy_list.proxies.push((priority, proxy_addr));
+    sources.proxies.push((priority, proxy_addr));
     // sort before storing
-    proxy_list.sort_by_priority();
+    sources.sort_by_priority();
 
-    ASSETS.save(deps.storage, &asset_token, &proxy_list)?;
+    ASSETS.save(deps.storage, &asset_token, &sources)?;
 
     Ok(Response::default())
 }
@@ -94,7 +91,7 @@ pub fn register_proxy(
 /// @param asset_token : Asset token address. Native assets are not supported
 /// @param proxy_addr : Proxy contract address
 /// @param priority : New priority number (lowest value has higher priority)
-pub fn update_priority(
+pub fn update_source_priority(
     deps: DepsMut,
     info: MessageInfo,
     asset_token: String,
@@ -110,15 +107,15 @@ pub fn update_priority(
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
 
-    let mut proxy_list: ProxyList = ASSETS
+    let mut sources: Sources = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
-    proxy_list.update_proxy_priority(&proxy_addr, priority)?;
+    sources.update_proxy_priority(&proxy_addr, priority)?;
     // sort before storing
-    proxy_list.sort_by_priority();
+    sources.sort_by_priority();
 
-    ASSETS.save(deps.storage, &asset_token, &proxy_list)?;
+    ASSETS.save(deps.storage, &asset_token, &sources)?;
 
     Ok(Response::default())
 }
@@ -126,7 +123,7 @@ pub fn update_priority(
 /// @dev Removes an existing price proxy for an asset_token
 /// @param asset_token : Asset token address. Native assets are not supported
 /// @param proxy_addr : Proxy contract address
-pub fn remove_proxy(
+pub fn remove_source(
     deps: DepsMut,
     info: MessageInfo,
     asset_token: String,
@@ -141,13 +138,68 @@ pub fn remove_proxy(
     let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
 
-    let mut proxy_list: ProxyList = ASSETS
+    let mut sources: Sources = ASSETS
         .load(deps.storage, &asset_token)
         .map_err(|_| ContractError::AssetNotRegistered {})?;
 
-    proxy_list.remove(&proxy_addr)?;
+    sources.remove(&proxy_addr)?;
 
-    ASSETS.save(deps.storage, &asset_token, &proxy_list)?;
+    ASSETS.save(deps.storage, &asset_token, &sources)?;
+
+    Ok(Response::default())
+}
+
+///
+pub fn whitelist_proxy(
+    deps: DepsMut,
+    info: MessageInfo,
+    proxy_addr: String,
+) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    if !config.is_owner(&info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
+    let mut whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
+
+    if whitelist
+        .proxies
+        .len()
+        .ge(&(MAX_WHITELISTED_PROXIES as usize))
+    {
+        return Err(ContractError::TooManyWhitelistedProxies {
+            max: MAX_WHITELISTED_PROXIES,
+        });
+    }
+
+    whitelist.proxies.push(proxy_addr);
+
+    WHITELIST.save(deps.storage, &whitelist)?;
+
+    Ok(Response::default())
+}
+
+///
+pub fn remove_proxy(
+    deps: DepsMut,
+    info: MessageInfo,
+    proxy_addr: String,
+) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    if !config.is_owner(&info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
+    let mut whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
+
+    // returns error if it is not whitelisted
+    whitelist.remove(&proxy_addr)?;
+
+    WHITELIST.save(deps.storage, &whitelist)?;
 
     Ok(Response::default())
 }

@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::Decimal;
 
+pub const DEFAULT_PRIORITY: u8 = 10;
+pub const MAX_WHITELISTED_PROXIES: u8 = 30;
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub owner: String,
@@ -18,23 +21,27 @@ pub enum HubExecuteMsg {
     UpdateOwner { owner: String },
     /// Owner operation to update the max_proxies_per_asset parameter
     UpdateMaxProxies { max_proxies_per_asset: u8 },
-    /// Registers a new proxy contract for an asset_token
-    RegisterProxy {
+    ///
+    RegisterSource {
         asset_token: String,
         proxy_addr: String,
         priority: Option<u8>,
     },
     /// Updates the priority paramter of an existing proxy
-    UpdatePriority {
+    UpdateSourcePriority {
         asset_token: String,
         proxy_addr: String,
         priority: u8,
     },
     /// Remves an already whitelisted proxy
-    RemoveProxy {
+    RemoveSource {
         asset_token: String,
         proxy_addr: String,
     },
+    ///
+    WhitelistProxy { proxy_addr: String },
+    ///
+    RemoveProxy { proxy_addr: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -42,8 +49,10 @@ pub enum HubExecuteMsg {
 pub enum HubQueryMsg {
     /// Queries contract configuration
     Config {},
+    ///
+    ProxyWhitelist {},
     /// Queries the information of all registered proxies for the provided asset_token
-    ProxyList { asset_token: String },
+    Sources { asset_token: String },
     /// Queries the highes priority available price within the timeframe
     /// If timeframe is not provided, it will ignore the price age
     Price {
@@ -81,7 +90,7 @@ pub struct PriceListResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct ProxyListResponse {
+pub struct SourcesResponse {
     pub asset_token: String,
     pub proxies: Vec<(u8, String)>,
 }
@@ -93,6 +102,11 @@ impl From<crate::proxy::ProxyPriceResponse> for PriceResponse {
             last_updated: proxy_res.last_updated,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ProxyWhitelistResponse {
+    pub proxies: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

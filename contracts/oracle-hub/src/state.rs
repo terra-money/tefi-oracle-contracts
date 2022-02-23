@@ -5,10 +5,11 @@ use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
 
 use crate::ContractError;
-use tefi_oracle::hub::{ConfigResponse, ProxyListResponse};
+use tefi_oracle::hub::{ConfigResponse, ProxyWhitelistResponse, SourcesResponse};
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const ASSETS: Map<&Addr, ProxyList> = Map::new("proxy_list");
+pub const ASSETS: Map<&Addr, Sources> = Map::new("sources");
+pub const WHITELIST: Item<ProxyWhitelist> = Item::new("whitelist");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {
@@ -36,12 +37,39 @@ impl Config {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
-pub struct ProxyList {
+pub struct ProxyWhitelist {
+    pub proxies: Vec<Addr>,
+}
+
+impl ProxyWhitelist {
+    pub fn as_res(&self) -> ProxyWhitelistResponse {
+        ProxyWhitelistResponse {
+            proxies: self.proxies.iter().map(|addr| addr.to_string()).collect(),
+        }
+    }
+
+    pub fn is_whitelisted(&self, proxy_addr: &Addr) -> bool {
+        self.proxies.iter().any(|item| item.eq(proxy_addr))
+    }
+
+    pub fn remove(&mut self, proxy_addr: &Addr) -> Result<(), ContractError> {
+        match self.proxies.iter().position(|item| item.eq(proxy_addr)) {
+            Some(position) => {
+                self.proxies.remove(position);
+                Ok(())
+            }
+            None => Err(ContractError::ProxyNotWhitelisted {}),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct Sources {
     pub asset_token: Addr,
     pub proxies: Vec<(u8, Addr)>,
 }
 
-impl ProxyList {
+impl Sources {
     /// @dev Sorts the proxy list by priority
     pub fn sort_by_priority(&mut self) {
         self.proxies.sort_by_key(|item| item.0);
@@ -53,8 +81,8 @@ impl ProxyList {
         self.proxies.iter().any(|item| item.1.eq(proxy_addr))
     }
 
-    pub fn as_res(&self) -> ProxyListResponse {
-        ProxyListResponse {
+    pub fn as_res(&self) -> SourcesResponse {
+        SourcesResponse {
             asset_token: self.asset_token.to_string(),
             proxies: self
                 .proxies

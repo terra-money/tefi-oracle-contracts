@@ -6,10 +6,12 @@ use cw2::set_contract_version;
 use tefi_oracle::hub::{HubExecuteMsg, HubQueryMsg, InstantiateMsg};
 
 use crate::handle::{
-    register_proxy, remove_proxy, update_max_proxies, update_owner, update_priority,
+    register_source, remove_proxy, remove_source, update_max_proxies, update_owner,
+    update_source_priority, whitelist_proxy,
 };
 use crate::query::{
-    query_config, query_legacy_price, query_price, query_price_list, query_proxy_list,
+    query_config, query_legacy_price, query_price, query_price_list, query_proxy_whitelist,
+    query_sources,
 };
 use crate::state::{Config, CONFIG};
 use crate::ContractError;
@@ -49,20 +51,22 @@ pub fn execute(
         HubExecuteMsg::UpdateMaxProxies {
             max_proxies_per_asset,
         } => update_max_proxies(deps, info, max_proxies_per_asset),
-        HubExecuteMsg::RegisterProxy {
+        HubExecuteMsg::RegisterSource {
             asset_token,
             proxy_addr,
             priority,
-        } => register_proxy(deps, info, asset_token, proxy_addr, priority),
-        HubExecuteMsg::UpdatePriority {
+        } => register_source(deps, info, asset_token, proxy_addr, priority),
+        HubExecuteMsg::UpdateSourcePriority {
             asset_token,
             proxy_addr,
             priority,
-        } => update_priority(deps, info, asset_token, proxy_addr, priority),
-        HubExecuteMsg::RemoveProxy {
+        } => update_source_priority(deps, info, asset_token, proxy_addr, priority),
+        HubExecuteMsg::RemoveSource {
             asset_token,
             proxy_addr,
-        } => remove_proxy(deps, info, asset_token, proxy_addr),
+        } => remove_source(deps, info, asset_token, proxy_addr),
+        HubExecuteMsg::WhitelistProxy { proxy_addr } => whitelist_proxy(deps, info, proxy_addr),
+        HubExecuteMsg::RemoveProxy { proxy_addr } => remove_proxy(deps, info, proxy_addr),
     }
 }
 
@@ -70,7 +74,8 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: HubQueryMsg) -> Result<Binary, ContractError> {
     let res = match msg {
         HubQueryMsg::Config {} => to_binary(&query_config(deps)?),
-        HubQueryMsg::ProxyList { asset_token } => to_binary(&query_proxy_list(deps, asset_token)?),
+        HubQueryMsg::ProxyWhitelist {} => to_binary(&query_proxy_whitelist(deps)?),
+        HubQueryMsg::Sources { asset_token } => to_binary(&query_sources(deps, asset_token)?),
         HubQueryMsg::Price {
             asset_token,
             timeframe,

@@ -16,13 +16,25 @@
       "additionalProperties": false
     },
     {
+      "type": "object",
+      "required": [
+        "proxy_whitelist"
+      ],
+      "properties": {
+        "proxy_whitelist": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Queries the information of all registered proxies for the provided asset_token",
       "type": "object",
       "required": [
-        "proxy_list"
+        "sources"
       ],
       "properties": {
-        "proxy_list": {
+        "sources": {
           "type": "object",
           "required": [
             "asset_token"

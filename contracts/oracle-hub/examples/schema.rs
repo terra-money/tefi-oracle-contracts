@@ -5,7 +5,7 @@ use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, s
 
 use tefi_oracle::hub::{
     ConfigResponse, HubExecuteMsg, HubQueryMsg, InstantiateMsg, LegacyPriceResponse,
-    PriceListResponse, PriceResponse, ProxyListResponse,
+    PriceListResponse, PriceResponse, ProxyWhitelistResponse,
 };
 
 fn main() {
@@ -18,7 +18,7 @@ fn main() {
     export_schema_with_title(&schema_for!(HubExecuteMsg), &out_dir, "ExecuteMsg");
     export_schema_with_title(&schema_for!(HubQueryMsg), &out_dir, "QueryMsg");
     export_schema(&schema_for!(ConfigResponse), &out_dir);
-    export_schema(&schema_for!(ProxyListResponse), &out_dir);
+    export_schema(&schema_for!(ProxyWhitelistResponse), &out_dir);
     export_schema(&schema_for!(PriceResponse), &out_dir);
     export_schema(&schema_for!(PriceListResponse), &out_dir);
     export_schema(&schema_for!(LegacyPriceResponse), &out_dir);
