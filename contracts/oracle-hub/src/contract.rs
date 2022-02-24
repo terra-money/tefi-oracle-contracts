@@ -13,7 +13,7 @@ use crate::query::{
     query_all_sources, query_asset_symbol_map, query_config, query_price, query_price_list,
     query_proxy_whitelist, query_sources,
 };
-use crate::state::{Config, CONFIG};
+use crate::state::{Config, ProxyWhitelist, CONFIG, WHITELIST};
 use crate::ContractError;
 
 // version info for migration info
@@ -35,6 +35,8 @@ pub fn instantiate(
         max_proxies_per_symbol: msg.max_proxies_per_symbol,
     };
     CONFIG.save(deps.storage, &config)?;
+
+    WHITELIST.save(deps.storage, &ProxyWhitelist { proxies: vec![] })?;
 
     Ok(Response::default())
 }
