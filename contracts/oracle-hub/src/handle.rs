@@ -88,16 +88,14 @@ pub fn register_source(
     Ok(Response::default())
 }
 
-/// @dev Changes the priority value for an existing price proxy
+/// @dev Changes the priority value for one or multiple registered proxies for a symbol
 /// @param symbol : Symbol of the asset
-/// @param proxy_addr : Proxy contract address
-/// @param priority : New priority number (lowest value has higher priority)
-pub fn update_source_priority(
+/// @param priorities : Array of (proxy, priority) updates
+pub fn update_source_priority_list(
     deps: DepsMut,
     info: MessageInfo,
     symbol: String,
-    proxy_addr: String,
-    priority: u8,
+    priorities: Vec<(String, u8)>,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -105,13 +103,24 @@ pub fn update_source_priority(
         return Err(ContractError::Unauthorized {});
     }
 
-    let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
-
     let mut sources: Sources = SOURCES
         .load(deps.storage, symbol.as_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
-    sources.update_proxy_priority(&proxy_addr, priority)?;
+    // check for duplicates in the input priority list
+    let mut priorities_d = priorities.clone();
+    priorities_d.sort();
+    priorities_d.dedup_by(|item1, item2| item1.0.eq(&item2.0));
+    if priorities_d.len() != priorities.len() {
+        return Err(ContractError::InvalidPriorities {});
+    }
+
+    for item in priorities_d {
+        let proxy_addr: Addr = deps.api.addr_validate(&item.0)?;
+        // if it is not registered, this will return error
+        sources.update_proxy_priority(&proxy_addr, item.1)?;
+    }
+
     // sort before storing
     sources.sort_by_priority();
 

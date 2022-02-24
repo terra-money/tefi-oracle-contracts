@@ -26,13 +26,12 @@ pub enum HubExecuteMsg {
         proxy_addr: String,
         priority: Option<u8>,
     },
-    /// Updates the priority paramter of an existing proxy
-    UpdateSourcePriority {
+    /// Updates the priorities for proxies registered
+    UpdateSourcePriorityList {
         symbol: String,
-        proxy_addr: String,
-        priority: u8,
+        priority_list: Vec<(String, u8)>,
     },
-    /// Remves an already registered proxy
+    /// Removes an already registered proxy
     RemoveSource { symbol: String, proxy_addr: String },
     ///
     WhitelistProxy { proxy_addr: String },

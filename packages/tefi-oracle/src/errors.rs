@@ -30,6 +30,9 @@ pub enum ContractError {
     #[error("Quote asset not supported")]
     InvalidQuote {},
 
+    #[error("Invalid priority list")]
+    InvalidPriorities {},
+
     #[error("There is no price available with the requested constrains")]
     PriceNotAvailable {},
 
