@@ -20,7 +20,7 @@ pub enum HubExecuteMsg {
     UpdateOwner { owner: String },
     /// Owner operation to update the max_proxies_per_symbol parameter
     UpdateMaxProxies { max_proxies_per_symbol: u8 },
-    ///
+    /// Register a new source for a symbol
     RegisterSource {
         symbol: String,
         proxy_addr: String,
@@ -33,11 +33,13 @@ pub enum HubExecuteMsg {
     },
     /// Removes an already registered proxy
     RemoveSource { symbol: String, proxy_addr: String },
-    ///
+    /// Whitelists a new proxy in hub. After a proxy is whitelisted
+    /// it can be registered as a source
     WhitelistProxy { proxy_addr: String },
-    ///
+    /// Removes a proxy from the whitelist
     RemoveProxy { proxy_addr: String },
-    ///
+    /// Updates the map of `asset_token` to `symbol`
+    /// overwrites storage if already mapped
     InsertAssetSymbolMap {
         items: Vec<(String, String)>, // (address, symbol)
     },
@@ -48,9 +50,9 @@ pub enum HubExecuteMsg {
 pub enum HubQueryMsg {
     /// Queries contract configuration
     Config {},
-    ///
+    /// Queries the list of whitelisted proxies
     ProxyWhitelist {},
-    ///
+    /// Returns the list of all symbols with all the sources
     AllSources {
         start_after: Option<String>, // symbol for pagination
         limit: Option<u32>,
@@ -75,7 +77,7 @@ pub enum HubQueryMsg {
     PriceList { asset_token: String },
     /// Queries all registered proxy prices for the provied symbol
     PriceListBySymbol { symbol: String },
-    ///
+    /// Returns the map of `asset_token` to `symbol`
     AssetSymbolMap {
         start_after: Option<String>, // address for pagination
         limit: Option<u32>,

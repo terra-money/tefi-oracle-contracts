@@ -5,8 +5,7 @@ use crate::{
 use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
 use tefi_oracle::hub::{DEFAULT_PRIORITY, MAX_WHITELISTED_PROXIES};
 
-/// @dev Updates the owner address
-/// @param owner : New owner address
+/// Updates the owner address
 pub fn update_owner(
     deps: DepsMut,
     info: MessageInfo,
@@ -26,8 +25,7 @@ pub fn update_owner(
     Ok(Response::default())
 }
 
-/// @dev Updates the max_proxies_per_asset parameter
-/// @param owner : New maximum number of proxies per asset
+/// Updates the `max_proxies_per_asset` parameter
 pub fn update_max_proxies(
     deps: DepsMut,
     info: MessageInfo,
@@ -46,10 +44,7 @@ pub fn update_max_proxies(
     Ok(Response::default())
 }
 
-/// @dev Registers a new price proxy contract for a symbol
-/// @param symbol : Symbol of the asset
-/// @param proxy_addr : Proxy contract address
-/// @param priority : Priority number (lowest value has higher priority)
+/// Registers a new price proxy contract for a symbol
 pub fn register_source(
     deps: DepsMut,
     info: MessageInfo,
@@ -94,9 +89,7 @@ pub fn register_source(
     Ok(Response::default())
 }
 
-/// @dev Changes the priority value for one or multiple registered proxies for a symbol
-/// @param symbol : Symbol of the asset
-/// @param priorities : Array of (proxy, priority) updates
+/// Changes the priority value for one or multiple registered proxies for a symbol
 pub fn update_source_priority_list(
     deps: DepsMut,
     info: MessageInfo,
@@ -135,9 +128,7 @@ pub fn update_source_priority_list(
     Ok(Response::default())
 }
 
-/// @dev Removes an existing price proxy for an asset_token
-/// @param symbol : Symbol of the asset
-/// @param proxy_addr : Proxy contract address
+/// Removes an existing price proxy for an `asset_token`
 pub fn remove_source(
     deps: DepsMut,
     info: MessageInfo,
@@ -163,7 +154,8 @@ pub fn remove_source(
     Ok(Response::default())
 }
 
-///
+/// Whitelist a new proxy. After a proxy is whitelisted it can be registered as
+/// a source for a given symbol
 pub fn whitelist_proxy(
     deps: DepsMut,
     info: MessageInfo,
@@ -195,7 +187,7 @@ pub fn whitelist_proxy(
     Ok(Response::default())
 }
 
-///
+/// Remove a proxy from the whitelist
 pub fn remove_proxy(
     deps: DepsMut,
     info: MessageInfo,
@@ -218,7 +210,9 @@ pub fn remove_proxy(
     Ok(Response::default())
 }
 
-///
+/// Update the map of `asset_token` => `symbol`
+/// ## Params
+/// * `items` - Array of (`asset_token`, `symbol`)
 pub fn insert_asset_symbol_map(
     deps: DepsMut,
     info: MessageInfo,

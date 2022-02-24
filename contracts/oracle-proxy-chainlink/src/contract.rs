@@ -70,8 +70,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner address
-/// @param owner : New owner address
+/// Updates the owner address
 pub fn update_owner(
     deps: DepsMut,
     info: MessageInfo,
@@ -91,8 +90,7 @@ pub fn update_owner(
     Ok(Response::default())
 }
 
-/// @dev Registers Chainlink price sources
-/// @param sources : Array of mappings (symbol, chainlink_source)
+/// Registers Chainlink price sources
 pub fn set_sources(
     deps: DepsMut,
     info: MessageInfo,
@@ -113,8 +111,7 @@ pub fn set_sources(
     Ok(Response::default())
 }
 
-/// @dev Removes an existing Chainlink price source for an asset_token
-/// @param asset_token : Address of the symbol to remove
+/// Removes an existing Chainlink price source for an asset_token
 pub fn remove_source(
     deps: DepsMut,
     info: MessageInfo,
@@ -135,15 +132,16 @@ pub fn remove_source(
 /// Query implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Queries the contract configuration
+/// Queries the contract configuration
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
 
     Ok(config.as_res())
 }
 
-/// @dev Queries the registered Chainlink prices sources
-/// @param symbol : (Optional) Asset symbol, if not provided, returns all sources
+/// Queries the registered Chainlink prices sources
+/// ## Parameters
+/// * `symbol` - (Optional) Asset symbol, if not provided, returns all sources
 pub fn query_sources(deps: Deps, symbol: Option<String>) -> Result<SourcesResponse, ContractError> {
     let sources: Vec<(String, String)> = match symbol {
         Some(symbol) => {
@@ -169,8 +167,7 @@ pub fn query_sources(deps: Deps, symbol: Option<String>) -> Result<SourcesRespon
     Ok(SourcesResponse { sources })
 }
 
-/// @dev Queries last price feed for the symbol by fetching from Chainlink source and converts to standard format
-/// @param symbol : Asset symbol
+/// Queries last price feed for the symbol by fetching from Chainlink source and converts to standard format
 pub fn query_price(deps: Deps, symbol: String) -> Result<ProxyPriceResponse, ContractError> {
     let source: Addr =
         SOURCES

@@ -16,23 +16,21 @@ use crate::state::{Config, ProxyWhitelist, Sources, ASSET_SYMBOL_MAP, CONFIG, SO
 const DEFAULT_PAGINATION_LIMIT: u32 = 10u32;
 const MAX_PAGINATION_LIMIT: u32 = 30u32;
 
-/// @dev Queries the contract configuration
+/// Queries the contract configuration
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
     Ok(config.as_res())
 }
 
-///
+/// Queries the proxy whitelist
 pub fn query_proxy_whitelist(deps: Deps) -> Result<ProxyWhitelistResponse, ContractError> {
     let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
 
     Ok(whitelist.as_res())
 }
 
-/// @dev Queries the list of registered proxies for an asset_token or symbol
-/// @param asset_token : Asset token address
-/// @param symbol : Asset symbol
+/// Queries the list of registered proxies for an `asset_token` or `symbol`
 pub fn query_sources(
     deps: Deps,
     asset_token: Option<String>,
@@ -60,11 +58,8 @@ pub fn query_sources(
     Ok(sources_list.as_res())
 }
 
-/// @dev Queries the available price with highest priority.
+/// Queries the available price with highest priority.
 /// `asset_token` or `symbol` must be provided
-/// @param asset_token : Asset token address
-/// @param symbol : Asset symbol
-/// @param timeframe : Valid price timeframe in seconds
 pub fn query_price(
     deps: Deps,
     env: Env,
@@ -115,9 +110,7 @@ pub fn query_price(
     Err(ContractError::PriceNotAvailable {})
 }
 
-/// @dev Queries prices from all registered proxies for an asset_token or symbol
-/// @param asset_token : Asset token address
-/// @param symbol : Asset symbol
+///  Queries prices from all registered proxies for an `asset_token` or `symbol`
 pub fn query_price_list(
     deps: Deps,
     asset_token: Option<String>,
@@ -156,7 +149,7 @@ pub fn query_price_list(
     Ok(PriceListResponse { price_list })
 }
 
-///
+/// Query the map of `asset_token`s to `symbol`s
 pub fn query_asset_symbol_map(
     deps: Deps,
     start_after: Option<String>,
@@ -180,7 +173,7 @@ pub fn query_asset_symbol_map(
     Ok(AssetSymbolMapResponse { map })
 }
 
-///
+/// Queries all sources for all symbols
 pub fn query_all_sources(
     deps: Deps,
     start_after: Option<String>,

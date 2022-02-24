@@ -64,8 +64,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner address
-/// @param owner : New owner address
+/// Updates the `owner` address
 pub fn update_owner(
     deps: DepsMut,
     info: MessageInfo,
@@ -85,9 +84,7 @@ pub fn update_owner(
     Ok(Response::default())
 }
 
-/// @dev Registers a new feeder or updates an existing one
-/// @param symbol : Asset symbol
-/// @param feeder : Address authorized to feed prices for the asset_token
+/// Registers a new `feeder` or updates an existing one for the specified `symbol`
 pub fn register_feed(
     deps: DepsMut,
     info: MessageInfo,
@@ -108,8 +105,9 @@ pub fn register_feed(
     Ok(Response::default())
 }
 
-/// @dev Feeder operation to feed prices to one or multiple asset tokens
-/// @param prices : Array of price feeds (symbol, price)
+/// Feeder operation to feed prices to one or multiple asset tokens
+/// ## Parameters
+/// * `prices` - Array of (`symbol`, `price`)
 pub fn feed_prices(
     deps: DepsMut,
     env: Env,
@@ -150,15 +148,14 @@ pub fn feed_prices(
 /// Query implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Queries the contract configuration
+/// Queries the contract configuration
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     Ok(config.as_res())
 }
 
-/// @dev Queries the registered feeder for an asset_token
-/// @param symbol : Asset symbol
+/// Queries the registered feeder for an asset_token
 pub fn query_feeder(deps: Deps, symbol: String) -> Result<FeederResponse, ContractError> {
     let registered_feeder: Addr =
         FEEDERS
@@ -173,8 +170,7 @@ pub fn query_feeder(deps: Deps, symbol: String) -> Result<FeederResponse, Contra
     })
 }
 
-/// @dev Queries last price feed for the symbol
-/// @param symbol : Asset symbol
+/// Queries last price feed for the symbol
 pub fn query_price(deps: Deps, symbol: String) -> Result<ProxyPriceResponse, ContractError> {
     let price_info: PriceInfo =
         PRICES

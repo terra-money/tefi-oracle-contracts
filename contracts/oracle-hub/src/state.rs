@@ -33,8 +33,7 @@ impl Config {
         }
     }
 
-    /// @dev Checks if the provided addr is owner
-    /// @param addr : address to check
+    /// Checks if the provided `addr` is owner
     pub fn is_owner(&self, addr: &Addr) -> bool {
         self.owner.eq(addr)
     }
@@ -74,13 +73,12 @@ pub struct Sources {
 }
 
 impl Sources {
-    /// @dev Sorts the proxy list by priority
+    /// Sorts the proxy list by priority
     pub fn sort_by_priority(&mut self) {
         self.proxies.sort_by_key(|item| item.0);
     }
 
-    /// @dev Checks if the provided proxy address is already registered
-    /// @param proxy_addr : address of the proxy to check
+    /// Checks if the provided proxy address is already registered
     pub fn is_registered(&self, proxy_addr: &Addr) -> bool {
         self.proxies.iter().any(|item| item.1.eq(proxy_addr))
     }
@@ -106,9 +104,7 @@ impl Sources {
         }
     }
 
-    /// @dev Updates the priority of the provided proxy address
-    /// @param proxy_addr : address of the proxy to update
-    /// @param priority : new priority value
+    /// Updates the priority of the provided proxy address
     pub fn update_proxy_priority(
         &mut self,
         proxy_addr: &Addr,

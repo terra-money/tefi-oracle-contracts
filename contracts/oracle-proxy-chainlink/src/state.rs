@@ -21,8 +21,7 @@ impl Config {
         }
     }
 
-    /// @dev Checks if the provided addr is owner
-    /// @param addr : address to check
+    /// Checks if the provided addr is owner
     pub fn is_owner(&self, addr: &Addr) -> bool {
         self.owner.eq(addr)
     }

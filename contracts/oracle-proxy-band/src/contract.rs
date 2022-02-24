@@ -66,9 +66,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner address or soruce_addr
-/// @param owner : New owner address
-/// @param source_addr : New band source address
+/// Updates the `owner` address or `soruce_addr`
 pub fn update_config(
     deps: DepsMut,
     info: MessageInfo,
@@ -100,15 +98,14 @@ pub fn update_config(
 /// Query implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Queries the contract configuration
+/// Queries the contract configuration
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     Ok(config.as_res())
 }
 
-/// @dev Queries the price by fetching it from Band source using the previously mapped symbol and converts to the standard format
-/// @param asset_token : Asset token address
+/// Queries the price by fetching it from Band source using the previously mapped symbol and converts to the standard format
 pub fn query_price(deps: Deps, symbol: String) -> Result<ProxyPriceResponse, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
