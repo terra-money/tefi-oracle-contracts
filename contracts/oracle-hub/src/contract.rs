@@ -10,8 +10,8 @@ use crate::handle::{
     update_owner, update_source_priority_list, whitelist_proxy,
 };
 use crate::query::{
-    query_asset_symbol_map, query_config, query_price, query_price_list, query_proxy_whitelist,
-    query_sources,
+    query_all_sources, query_asset_symbol_map, query_config, query_price, query_price_list,
+    query_proxy_whitelist, query_sources,
 };
 use crate::state::{Config, CONFIG};
 use crate::ContractError;
@@ -95,6 +95,9 @@ pub fn query(deps: Deps, env: Env, msg: HubQueryMsg) -> Result<Binary, ContractE
         }
         HubQueryMsg::AssetSymbolMap { start_after, limit } => {
             to_binary(&query_asset_symbol_map(deps, start_after, limit)?)
+        }
+        HubQueryMsg::AllSources { start_after, limit } => {
+            to_binary(&query_all_sources(deps, start_after, limit)?)
         }
     };
 

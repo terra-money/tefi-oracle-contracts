@@ -50,6 +50,11 @@ pub enum HubQueryMsg {
     Config {},
     ///
     ProxyWhitelist {},
+    ///
+    AllSources {
+        start_after: Option<String>, // symbol for pagination
+        limit: Option<u32>,
+    },
     /// Queries the information of all registered proxies for the provided asset_token
     Sources { asset_token: String },
     /// Queries the information of all registered proxies for the provided symbol
@@ -72,7 +77,7 @@ pub enum HubQueryMsg {
     PriceListBySymbol { symbol: String },
     ///
     AssetSymbolMap {
-        start_after: Option<String>,
+        start_after: Option<String>, // address for pagination
         limit: Option<u32>,
     },
 }
@@ -105,6 +110,11 @@ pub struct PriceListResponse {
 pub struct SourcesResponse {
     pub symbol: String,
     pub proxies: Vec<(u8, String)>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct AllSourcesResponse {
+    pub list: Vec<SourcesResponse>,
 }
 
 impl From<crate::proxy::ProxyPriceResponse> for PriceResponse {

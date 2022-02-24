@@ -4,8 +4,8 @@ use tefi_oracle::{
     de::deserialize_key,
     errors::ContractError,
     hub::{
-        AssetSymbolMapResponse, ConfigResponse, PriceListResponse, PriceQueryResult, PriceResponse,
-        ProxyWhitelistResponse, SourcesResponse,
+        AllSourcesResponse, AssetSymbolMapResponse, ConfigResponse, PriceListResponse,
+        PriceQueryResult, PriceResponse, ProxyWhitelistResponse, SourcesResponse,
     },
     proxy::ProxyPriceResponse,
     querier::query_proxy_symbol_price,
@@ -151,7 +151,7 @@ pub fn query_price_list(
     Ok(PriceListResponse { price_list })
 }
 
-//
+///
 pub fn query_asset_symbol_map(
     deps: Deps,
     start_after: Option<String>,
@@ -166,11 +166,34 @@ pub fn query_asset_symbol_map(
         .range(deps.storage, start, None, Order::Ascending)
         .take(limit)
         .map(|item| {
-            let (k, address) = item?;
-            let symbol = deserialize_key::<String>(k).unwrap();
-            Ok((symbol, address))
+            let (k, symbol) = item?;
+            let address = deserialize_key::<String>(k).unwrap();
+            Ok((address, symbol))
         })
         .collect::<StdResult<Vec<(String, String)>>>()?;
 
     Ok(AssetSymbolMapResponse { map })
+}
+
+///
+pub fn query_all_sources(
+    deps: Deps,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> Result<AllSourcesResponse, ContractError> {
+    let limit = limit
+        .unwrap_or(DEFAULT_PAGINATION_LIMIT)
+        .min(MAX_PAGINATION_LIMIT) as usize;
+    let start = start_after.map(|symbol| Bound::exclusive(symbol.as_bytes()));
+
+    let list: Vec<SourcesResponse> = SOURCES
+        .range(deps.storage, start, None, Order::Ascending)
+        .take(limit)
+        .map(|item| {
+            let (_, sources) = item?;
+            Ok(sources.as_res())
+        })
+        .collect::<StdResult<Vec<SourcesResponse>>>()?;
+
+    Ok(AllSourcesResponse { list })
 }
