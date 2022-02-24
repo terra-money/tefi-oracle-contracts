@@ -66,6 +66,12 @@ pub fn register_source(
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
     let priority: u8 = priority.unwrap_or(DEFAULT_PRIORITY);
 
+    // check if the proxy is whitelisted
+    let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
+    if !whitelist.is_whitelisted(&proxy_addr) {
+        return Err(ContractError::ProxyNotWhitelisted {});
+    }
+
     let mut sources: Sources = SOURCES
         .load(deps.storage, symbol.as_bytes())
         .unwrap_or(Sources {
