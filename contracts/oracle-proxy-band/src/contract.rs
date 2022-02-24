@@ -43,7 +43,9 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::UpdateOwner { owner } => update_owner(deps, info, owner),
+        ExecuteMsg::UpdateConfig { owner, source_addr } => {
+            update_config(deps, info, owner, source_addr)
+        }
     }
 }
 
@@ -64,12 +66,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner address
+/// @dev Updates the owner address or soruce_addr
 /// @param owner : New owner address
-pub fn update_owner(
+/// @param source_addr : New band source address
+pub fn update_config(
     deps: DepsMut,
     info: MessageInfo,
-    owner: String,
+    owner: Option<String>,
+    source_addr: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
@@ -77,8 +81,15 @@ pub fn update_owner(
         return Err(ContractError::Unauthorized {});
     }
 
-    let owner_addr: Addr = deps.api.addr_validate(&owner)?;
-    config.owner = owner_addr;
+    if let Some(owner) = owner {
+        let owner_addr: Addr = deps.api.addr_validate(&owner)?;
+        config.owner = owner_addr;
+    }
+
+    if let Some(source_addr) = source_addr {
+        let source_addr: Addr = deps.api.addr_validate(&source_addr)?;
+        config.source_addr = source_addr;
+    }
 
     CONFIG.save(deps.storage, &config)?;
 
