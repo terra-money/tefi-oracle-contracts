@@ -42,7 +42,9 @@ pub fn query_sources(
         Some(v) => v,
         None => {
             if let Some(asset_token) = asset_token {
-                ASSET_SYMBOL_MAP.load(deps.storage, asset_token.as_bytes())?
+                ASSET_SYMBOL_MAP
+                    .load(deps.storage, asset_token.as_bytes())
+                    .map_err(|_| ContractError::MappingNotFound {})?
             } else {
                 return Err(ContractError::Std(StdError::generic_err(
                     "symbol or asset_token must be provided",
@@ -74,8 +76,11 @@ pub fn query_price(
         Some(v) => v,
         None => {
             if let Some(asset_token) = asset_token {
-                ASSET_SYMBOL_MAP.load(deps.storage, asset_token.as_bytes())?
+                ASSET_SYMBOL_MAP
+                    .load(deps.storage, asset_token.as_bytes())
+                    .map_err(|_| ContractError::MappingNotFound {})?
             } else {
+                // internal error, should never happen
                 return Err(ContractError::Std(StdError::generic_err(
                     "symbol or asset_token must be provided",
                 )));

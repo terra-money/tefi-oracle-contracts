@@ -27,6 +27,9 @@ pub enum ContractError {
     #[error("The symbol is not registered")]
     SymbolNotRegistered {},
 
+    #[error("This asset token is not mapped to any symbol")]
+    MappingNotFound {},
+
     #[error("Quote asset not supported")]
     InvalidQuote {},
 
