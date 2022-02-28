@@ -17,3 +17,5 @@ target/
 
 # code coverage
 tarpaulin-report.*
+
+artifacts/
