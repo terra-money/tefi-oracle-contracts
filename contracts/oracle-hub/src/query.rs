@@ -1,4 +1,4 @@
-use cosmwasm_std::{Deps, Env, Order, StdError, StdResult};
+use cosmwasm_std::{Addr, Deps, Env, Order, StdError, StdResult};
 use cw_storage_plus::Bound;
 use tefi_oracle::{
     de::deserialize_key,
@@ -194,4 +194,25 @@ pub fn query_all_sources(
         .collect::<StdResult<Vec<SourcesResponse>>>()?;
 
     Ok(AllSourcesResponse { list })
+}
+
+pub fn query_check_source(
+    deps: Deps,
+    proxy_addr: String,
+    symbol: String,
+) -> Result<PriceResponse, ContractError> {
+    let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
+
+    // check if the proxy is whitelisted
+    let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
+    if !whitelist.is_whitelisted(&proxy_addr) {
+        return Err(ContractError::ProxyNotWhitelisted {});
+    }
+
+    // attempt to query price from proxy
+    let price_res: ProxyPriceResponse =
+        query_proxy_symbol_price(&deps.querier, &proxy_addr, symbol)
+            .map_err(|_| ContractError::PriceNotAvailable {})?;
+
+    Ok(price_res.into())
 }

@@ -82,6 +82,11 @@ pub enum HubQueryMsg {
         start_after: Option<String>, // address for pagination
         limit: Option<u32>,
     },
+    /// Query to check if `proxy_addr` is whitelisted and has price feed
+    /// for the specified `symbol`. The purpose of this query is to have a
+    /// way of checking if a price feed is valid and available before registering
+    /// Returns the PriceResponse or an error
+    CheckSource { proxy_addr: String, symbol: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
