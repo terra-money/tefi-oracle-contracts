@@ -16,6 +16,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Queries the list of whitelisted proxies",
       "type": "object",
       "required": [
         "proxy_whitelist"
@@ -23,6 +24,35 @@
       "properties": {
         "proxy_whitelist": {
           "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns the list of all symbols with all the sources",
+      "type": "object",
+      "required": [
+        "all_sources"
+      ],
+      "properties": {
+        "all_sources": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -41,6 +71,27 @@
           ],
           "properties": {
             "asset_token": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Queries the information of all registered proxies for the provided symbol",
+      "type": "object",
+      "required": [
+        "sources_by_symbol"
+      ],
+      "properties": {
+        "sources_by_symbol": {
+          "type": "object",
+          "required": [
+            "symbol"
+          ],
+          "properties": {
+            "symbol": {
               "type": "string"
             }
           }
@@ -78,6 +129,35 @@
       "additionalProperties": false
     },
     {
+      "description": "Queries the highes priority available price within the timeframe If timeframe is not provided, it will ignore the price age",
+      "type": "object",
+      "required": [
+        "price_by_symbol"
+      ],
+      "properties": {
+        "price_by_symbol": {
+          "type": "object",
+          "required": [
+            "symbol"
+          ],
+          "properties": {
+            "symbol": {
+              "type": "string"
+            },
+            "timeframe": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
       "description": "Queries all registered proxy prices for the provied asset_token",
       "type": "object",
       "required": [
@@ -99,23 +179,73 @@
       "additionalProperties": false
     },
     {
-      "description": "Anchor legacy query interface for oracle prices",
+      "description": "Queries all registered proxy prices for the provied symbol",
       "type": "object",
       "required": [
-        "legacy_price"
+        "price_list_by_symbol"
       ],
       "properties": {
-        "legacy_price": {
+        "price_list_by_symbol": {
           "type": "object",
           "required": [
-            "base",
-            "quote"
+            "symbol"
           ],
           "properties": {
-            "base": {
+            "symbol": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns the map of `asset_token` to `symbol`",
+      "type": "object",
+      "required": [
+        "asset_symbol_map"
+      ],
+      "properties": {
+        "asset_symbol_map": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Query to check if `proxy_addr` is whitelisted and has price feed for the specified `symbol`. The purpose of this query is to have a way of checking if a price feed is valid and available before registering Returns the PriceResponse or an error",
+      "type": "object",
+      "required": [
+        "check_source"
+      ],
+      "properties": {
+        "check_source": {
+          "type": "object",
+          "required": [
+            "proxy_addr",
+            "symbol"
+          ],
+          "properties": {
+            "proxy_addr": {
               "type": "string"
             },
-            "quote": {
+            "symbol": {
               "type": "string"
             }
           }

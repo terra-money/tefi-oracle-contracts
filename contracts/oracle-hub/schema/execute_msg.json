@@ -24,7 +24,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Owner operation to update the max_proxies_per_asset parameter",
+      "description": "Owner operation to update the max_proxies_per_symbol parameter",
       "type": "object",
       "required": [
         "update_max_proxies"
@@ -33,10 +33,10 @@
         "update_max_proxies": {
           "type": "object",
           "required": [
-            "max_proxies_per_asset"
+            "max_proxies_per_symbol"
           ],
           "properties": {
-            "max_proxies_per_asset": {
+            "max_proxies_per_symbol": {
               "type": "integer",
               "format": "uint8",
               "minimum": 0.0
@@ -47,6 +47,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Register a new source for a symbol",
       "type": "object",
       "required": [
         "register_source"
@@ -55,13 +56,10 @@
         "register_source": {
           "type": "object",
           "required": [
-            "asset_token",
-            "proxy_addr"
+            "proxy_addr",
+            "symbol"
           ],
           "properties": {
-            "asset_token": {
-              "type": "string"
-            },
             "priority": {
               "type": [
                 "integer",
@@ -72,6 +70,9 @@
             },
             "proxy_addr": {
               "type": "string"
+            },
+            "symbol": {
+              "type": "string"
             }
           }
         }
@@ -79,29 +80,80 @@
       "additionalProperties": false
     },
     {
-      "description": "Updates the priority paramter of an existing proxy",
+      "description": "Registers a list of sources",
       "type": "object",
       "required": [
-        "update_source_priority"
+        "bulk_register_source"
       ],
       "properties": {
-        "update_source_priority": {
+        "bulk_register_source": {
           "type": "object",
           "required": [
-            "asset_token",
-            "priority",
-            "proxy_addr"
+            "sources"
           ],
           "properties": {
-            "asset_token": {
-              "type": "string"
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "format": "uint8",
+                    "minimum": 0.0
+                  }
+                ],
+                "maxItems": 3,
+                "minItems": 3
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Updates the priorities for proxies registered",
+      "type": "object",
+      "required": [
+        "update_source_priority_list"
+      ],
+      "properties": {
+        "update_source_priority_list": {
+          "type": "object",
+          "required": [
+            "priority_list",
+            "symbol"
+          ],
+          "properties": {
+            "priority_list": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer",
+                    "format": "uint8",
+                    "minimum": 0.0
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
             },
-            "priority": {
-              "type": "integer",
-              "format": "uint8",
-              "minimum": 0.0
-            },
-            "proxy_addr": {
+            "symbol": {
               "type": "string"
             }
           }
@@ -110,7 +162,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Remves an already whitelisted proxy",
+      "description": "Removes an already registered proxy",
       "type": "object",
       "required": [
         "remove_source"
@@ -119,14 +171,14 @@
         "remove_source": {
           "type": "object",
           "required": [
-            "asset_token",
-            "proxy_addr"
+            "proxy_addr",
+            "symbol"
           ],
           "properties": {
-            "asset_token": {
+            "proxy_addr": {
               "type": "string"
             },
-            "proxy_addr": {
+            "symbol": {
               "type": "string"
             }
           }
@@ -135,6 +187,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Whitelists a new proxy in hub. After a proxy is whitelisted it can be registered as a source",
       "type": "object",
       "required": [
         "whitelist_proxy"
@@ -155,6 +208,7 @@
       "additionalProperties": false
     },
     {
+      "description": "Removes a proxy from the whitelist",
       "type": "object",
       "required": [
         "remove_proxy"
@@ -168,6 +222,40 @@
           "properties": {
             "proxy_addr": {
               "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Updates the map of `asset_token` to `symbol` overwrites storage if already mapped",
+      "type": "object",
+      "required": [
+        "insert_asset_symbol_map"
+      ],
+      "properties": {
+        "insert_asset_symbol_map": {
+          "type": "object",
+          "required": [
+            "map"
+          ],
+          "properties": {
+            "map": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
             }
           }
         }
