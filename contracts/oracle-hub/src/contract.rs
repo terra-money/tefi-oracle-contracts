@@ -6,8 +6,8 @@ use cw2::set_contract_version;
 use tefi_oracle::hub::{HubExecuteMsg, HubQueryMsg, InstantiateMsg};
 
 use crate::handle::{
-    insert_asset_symbol_map, register_source, remove_proxy, remove_source, update_max_proxies,
-    update_owner, update_source_priority_list, whitelist_proxy,
+    bulk_register_source, insert_asset_symbol_map, register_source, remove_proxy, remove_source,
+    update_max_proxies, update_owner, update_source_priority_list, whitelist_proxy,
 };
 use crate::query::{
     query_all_sources, query_asset_symbol_map, query_check_source, query_config, query_price,
@@ -58,6 +58,7 @@ pub fn execute(
             proxy_addr,
             priority,
         } => register_source(deps, info, symbol, proxy_addr, priority),
+        HubExecuteMsg::BulkRegisterSource { sources } => bulk_register_source(deps, info, sources),
         HubExecuteMsg::UpdateSourcePriorityList {
             symbol,
             priority_list,

@@ -26,6 +26,10 @@ pub enum HubExecuteMsg {
         proxy_addr: String,
         priority: Option<u8>,
     },
+    /// Registers a list of sources
+    BulkRegisterSource {
+        sources: Vec<(String, String, Option<u8>)>, // (symbol, proxy_addr, priority)
+    },
     /// Updates the priorities for proxies registered
     UpdateSourcePriorityList {
         symbol: String,

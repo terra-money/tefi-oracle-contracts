@@ -93,6 +93,57 @@ pub fn register_source(
     Ok(Response::default())
 }
 
+/// Registers a list of sources
+pub fn bulk_register_source(
+    deps: DepsMut,
+    info: MessageInfo,
+    sources: Vec<(String, String, Option<u8>)>,
+) -> Result<Response, ContractError> {
+    let config: Config = CONFIG.load(deps.storage)?;
+
+    if !config.is_owner(&info.sender) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    for source in sources {
+        let symbol: String = source.0;
+        let proxy_addr: Addr = deps.api.addr_validate(&source.1)?;
+        let priority: u8 = source.2.unwrap_or(DEFAULT_PRIORITY);
+
+        // check if the proxy is whitelisted
+        let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
+        if !whitelist.is_whitelisted(&proxy_addr) {
+            return Err(ContractError::ProxyNotWhitelisted {});
+        }
+
+        let mut sources: Sources =
+            SOURCES
+                .load(deps.storage, symbol.as_bytes())
+                .unwrap_or(Sources {
+                    symbol: symbol.clone(),
+                    proxies: vec![],
+                });
+
+        if sources.proxies.len() >= config.max_proxies_per_symbol as usize {
+            return Err(ContractError::TooManyProxiesForSymbol {
+                max: config.max_proxies_per_symbol,
+            });
+        }
+
+        if sources.is_registered(&proxy_addr) {
+            return Err(ContractError::ProxyAlreadyRegistered {});
+        }
+
+        sources.proxies.push((priority, proxy_addr));
+        // sort before storing
+        sources.sort_by_priority();
+
+        SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
+    }
+
+    Ok(Response::default())
+}
+
 /// Changes the priority value for one or multiple registered proxies for a symbol
 pub fn update_source_priority_list(
     deps: DepsMut,
