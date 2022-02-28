@@ -4,8 +4,8 @@ use std::fs::create_dir_all;
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 
 use tefi_oracle::hub::{
-    ConfigResponse, HubExecuteMsg, HubQueryMsg, InstantiateMsg, PriceListResponse, PriceResponse,
-    ProxyWhitelistResponse, SourcesResponse, AllSourcesResponse, AssetSymbolMapResponse
+    AllSourcesResponse, AssetSymbolMapResponse, ConfigResponse, HubExecuteMsg, HubQueryMsg,
+    InstantiateMsg, PriceListResponse, PriceResponse, ProxyWhitelistResponse, SourcesResponse,
 };
 
 fn main() {
