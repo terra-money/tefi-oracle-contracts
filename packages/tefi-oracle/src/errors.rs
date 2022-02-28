@@ -15,6 +15,9 @@ pub enum ContractError {
     #[error("The proxy is not registered as a source for this asset")]
     ProxyNotRegistered {},
 
+    #[error("The proxy was already registered for this asset")]
+    ProxyAlreadyRegistered {},
+
     #[error("The proxy address is not whitelisted")]
     ProxyNotWhitelisted {},
 

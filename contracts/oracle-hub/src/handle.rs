@@ -80,6 +80,10 @@ pub fn register_source(
         });
     }
 
+    if sources.is_registered(&proxy_addr) {
+        return Err(ContractError::ProxyAlreadyRegistered {});
+    }
+
     sources.proxies.push((priority, proxy_addr));
     // sort before storing
     sources.sort_by_priority();
@@ -216,7 +220,7 @@ pub fn remove_proxy(
 pub fn insert_asset_symbol_map(
     deps: DepsMut,
     info: MessageInfo,
-    items: Vec<(String, String)>,
+    map: Vec<(String, String)>,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -224,7 +228,7 @@ pub fn insert_asset_symbol_map(
         return Err(ContractError::Unauthorized {});
     }
 
-    for item in items {
+    for item in map {
         ASSET_SYMBOL_MAP.save(deps.storage, item.0.as_bytes(), &item.1)?;
     }
 

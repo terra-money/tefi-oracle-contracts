@@ -41,7 +41,7 @@ pub enum HubExecuteMsg {
     /// Updates the map of `asset_token` to `symbol`
     /// overwrites storage if already mapped
     InsertAssetSymbolMap {
-        items: Vec<(String, String)>, // (address, symbol)
+        map: Vec<(String, String)>, // (address, symbol)
     },
 }
 

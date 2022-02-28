@@ -67,7 +67,7 @@ pub fn execute(
         }
         HubExecuteMsg::WhitelistProxy { proxy_addr } => whitelist_proxy(deps, info, proxy_addr),
         HubExecuteMsg::RemoveProxy { proxy_addr } => remove_proxy(deps, info, proxy_addr),
-        HubExecuteMsg::InsertAssetSymbolMap { items } => insert_asset_symbol_map(deps, info, items),
+        HubExecuteMsg::InsertAssetSymbolMap { map } => insert_asset_symbol_map(deps, info, map),
     }
 }
 
