@@ -3,7 +3,10 @@ use crate::{
     ContractError,
 };
 use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
-use tefi_oracle::hub::{DEFAULT_PRIORITY, MAX_WHITELISTED_PROXIES};
+use tefi_oracle::{
+    hub::{DEFAULT_PRIORITY, MAX_WHITELISTED_PROXIES},
+    querier::query_proxy_symbol_price,
+};
 
 /// Updates the owner address
 pub fn update_owner(
@@ -83,6 +86,10 @@ pub fn register_source(
     if sources.is_registered(&proxy_addr) {
         return Ok(Response::default());
     }
+
+    // check if proxy has the price for this symbol, fail otherwise
+    query_proxy_symbol_price(&deps.querier, &proxy_addr, symbol.clone())
+        .map_err(|_| ContractError::PriceNotAvailable {})?;
 
     sources.proxies.push((priority, proxy_addr));
     // sort before storing

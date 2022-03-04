@@ -216,6 +216,9 @@ fn test_register_source() {
     let mut deps = mock_dependencies(&[]);
     init(&mut deps).unwrap();
 
+    deps.querier
+        .with_proxy_price(&[(&"TSLA".to_string(), &Decimal::one())]);
+
     let msg = ExecuteMsg::RegisterSource {
         symbol: "TSLA".to_string(),
         proxy_addr: PROXY_ADDR_1.to_string(),
@@ -320,6 +323,9 @@ fn test_remove_source() {
     let mut deps = mock_dependencies(&[]);
     init(&mut deps).unwrap();
 
+    deps.querier
+        .with_proxy_price(&[(&"TSLA".to_string(), &Decimal::one())]);
+
     whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
     whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
 
@@ -379,6 +385,9 @@ fn test_remove_source() {
 fn test_update_priority() {
     let mut deps = mock_dependencies(&[]);
     init(&mut deps).unwrap();
+
+    deps.querier
+        .with_proxy_price(&[(&"TSLA".to_string(), &Decimal::one())]);
 
     whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
     whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
@@ -467,6 +476,9 @@ fn test_update_priority() {
 fn test_symbol_map() {
     let mut deps = mock_dependencies(&[]);
     init(&mut deps).unwrap();
+
+    deps.querier
+        .with_proxy_price(&[(&"TSLA".to_string(), &Decimal::one())]);
 
     whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
     register_source(&mut deps, "TSLA", PROXY_ADDR_1, None).unwrap();
@@ -597,6 +609,12 @@ fn test_symbol_map() {
 fn test_query_pagination() {
     let mut deps = mock_dependencies(&[]);
     init(&mut deps).unwrap();
+
+    deps.querier.with_proxy_price(&[
+        (&"TSLA".to_string(), &Decimal::one()),
+        (&"AAPL".to_string(), &Decimal::one()),
+        (&"AMZN".to_string(), &Decimal::one()),
+    ]);
 
     whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
     whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
