@@ -260,9 +260,8 @@ fn test_register_source() {
         }
     );
 
-    // if we register same proxy again, expect error
-    let err = execute(deps.as_mut(), mock_env(), owner_info.clone(), msg).unwrap_err();
-    assert_eq!(err, ContractError::ProxyAlreadyRegistered {});
+    // if we register same proxy again, graceful return
+    execute(deps.as_mut(), mock_env(), owner_info.clone(), msg).unwrap();
 
     // register one more source for tsla
     let msg = ExecuteMsg::RegisterSource {

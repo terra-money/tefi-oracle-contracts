@@ -81,7 +81,7 @@ pub fn register_source(
     }
 
     if sources.is_registered(&proxy_addr) {
-        return Err(ContractError::ProxyAlreadyRegistered {});
+        return Ok(Response::default());
     }
 
     sources.proxies.push((priority, proxy_addr));
