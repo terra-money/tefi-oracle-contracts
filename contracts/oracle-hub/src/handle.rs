@@ -287,6 +287,7 @@ pub fn insert_asset_symbol_map(
     }
 
     for item in map {
+        deps.api.addr_validate(&item.0)?;
         ASSET_SYMBOL_MAP.save(deps.storage, item.0.as_bytes(), &item.1)?;
     }
 
