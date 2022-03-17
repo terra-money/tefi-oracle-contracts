@@ -5,13 +5,16 @@ use tefi_oracle::{
     errors::ContractError,
     hub::{
         AllSourcesResponse, AssetSymbolMapResponse, ConfigResponse, PriceListResponse,
-        PriceQueryResult, PriceResponse, ProxyWhitelistResponse, SourcesResponse,
+        PriceQueryResult, PriceResponse, ProxyInfoResponse, ProxyWhitelistResponse,
+        SourcesResponse,
     },
     proxy::ProxyPriceResponse,
     querier::query_proxy_symbol_price,
 };
 
-use crate::state::{Config, ProxyWhitelist, Sources, ASSET_SYMBOL_MAP, CONFIG, SOURCES, WHITELIST};
+use crate::state::{
+    Config, ProxyInfo, ProxyWhitelist, Sources, ASSET_SYMBOL_MAP, CONFIG, SOURCES, WHITELIST,
+};
 
 const DEFAULT_PAGINATION_LIMIT: u32 = 10u32;
 const MAX_PAGINATION_LIMIT: u32 = 30u32;
@@ -54,8 +57,9 @@ pub fn query_sources(
     let sources_list: Sources = SOURCES
         .load(deps.storage, symbol.as_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
+    let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
 
-    Ok(sources_list.as_res())
+    Ok(sources_list.as_res(&whitelist))
 }
 
 /// Queries the available price with highest priority.
@@ -132,8 +136,9 @@ pub fn query_price_list(
     let sources: Sources = SOURCES
         .load(deps.storage, symbol.as_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
+    let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
 
-    let price_list: Vec<(u8, PriceQueryResult)> = sources
+    let price_list: Vec<(u8, ProxyInfoResponse, PriceQueryResult)> = sources
         .proxies
         .iter()
         .map(|item| {
@@ -141,8 +146,12 @@ pub fn query_price_list(
                 Ok(price_res) => PriceQueryResult::Success(price_res.into()),
                 Err(..) => PriceQueryResult::Fail,
             };
+            let proxy_info = whitelist.find_by_addr(&item.1).unwrap_or(ProxyInfo {
+                address: item.1.clone(),
+                provider_name: "No longer whitelisted".to_string(),
+            });
 
-            (item.0, res)
+            (item.0, proxy_info.as_res(), res)
         })
         .collect();
 
@@ -184,12 +193,13 @@ pub fn query_all_sources(
         .min(MAX_PAGINATION_LIMIT) as usize;
     let start = start_after.map(|symbol| Bound::exclusive(symbol.as_bytes()));
 
+    let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
     let list: Vec<SourcesResponse> = SOURCES
         .range(deps.storage, start, None, Order::Ascending)
         .take(limit)
         .map(|item| {
             let (_, sources) = item?;
-            Ok(sources.as_res())
+            Ok(sources.as_res(&whitelist))
         })
         .collect::<StdResult<Vec<SourcesResponse>>>()?;
 

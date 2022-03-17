@@ -4,15 +4,17 @@ use cosmwasm_std::{from_binary, Decimal, MemoryStorage, OwnedDeps, Response, Std
 use tefi_oracle::errors::ContractError;
 use tefi_oracle::hub::{
     AllSourcesResponse, AssetSymbolMapResponse, ConfigResponse, HubExecuteMsg as ExecuteMsg,
-    HubQueryMsg as QueryMsg, InstantiateMsg, PriceResponse, ProxyWhitelistResponse,
-    SourcesResponse,
+    HubQueryMsg as QueryMsg, InstantiateMsg, PriceResponse, ProxyInfoResponse,
+    ProxyWhitelistResponse, SourcesResponse,
 };
 
 use super::mock_querier::{mock_dependencies, WasmMockQuerier};
 
 const OWNER_ADDR: &str = "owner_0001";
 const PROXY_ADDR_1: &str = "proxy_0001";
+const PROXY_NAME_1: &str = "Proxy Provider 1";
 const PROXY_ADDR_2: &str = "proxy_0002";
+const PROXY_NAME_2: &str = "Proxy Provider 2";
 
 // helper to successfully init
 pub fn init(deps: &mut OwnedDeps<MemoryStorage, MockApi, WasmMockQuerier>) -> StdResult<Response> {
@@ -29,9 +31,11 @@ pub fn init(deps: &mut OwnedDeps<MemoryStorage, MockApi, WasmMockQuerier>) -> St
 pub fn whitelist_proxy(
     deps: &mut OwnedDeps<MemoryStorage, MockApi, WasmMockQuerier>,
     proxy_addr: &str,
+    provider_name: &str,
 ) -> Result<Response, ContractError> {
     let msg = ExecuteMsg::WhitelistProxy {
         proxy_addr: proxy_addr.to_string(),
+        provider_name: provider_name.to_string(),
     };
     let info = mock_info(OWNER_ADDR, &[]);
     execute(deps.as_mut(), mock_env(), info, msg)
@@ -138,6 +142,7 @@ fn test_whitelist_proxy() {
 
     let msg = ExecuteMsg::WhitelistProxy {
         proxy_addr: PROXY_ADDR_1.to_string(),
+        provider_name: PROXY_NAME_1.to_string(),
     };
 
     // unauthorized attempt
@@ -154,19 +159,31 @@ fn test_whitelist_proxy() {
     assert_eq!(
         res,
         ProxyWhitelistResponse {
-            proxies: vec![PROXY_ADDR_1.to_string()]
+            proxies: vec![ProxyInfoResponse {
+                address: PROXY_ADDR_1.to_string(),
+                provider_name: PROXY_NAME_1.to_string(),
+            }]
         }
     );
 
     // add another one
-    whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_2, PROXY_NAME_2).unwrap();
 
     let res = query(deps.as_ref(), mock_env(), QueryMsg::ProxyWhitelist {}).unwrap();
     let res: ProxyWhitelistResponse = from_binary(&res).unwrap();
     assert_eq!(
         res,
         ProxyWhitelistResponse {
-            proxies: vec![PROXY_ADDR_1.to_string(), PROXY_ADDR_2.to_string()]
+            proxies: vec![
+                ProxyInfoResponse {
+                    address: PROXY_ADDR_1.to_string(),
+                    provider_name: PROXY_NAME_1.to_string(),
+                },
+                ProxyInfoResponse {
+                    address: PROXY_ADDR_2.to_string(),
+                    provider_name: PROXY_NAME_2.to_string(),
+                }
+            ]
         }
     );
 }
@@ -176,8 +193,8 @@ fn test_remove_proxy() {
     let mut deps = mock_dependencies(&[]);
     init(&mut deps).unwrap();
 
-    whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
-    whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_1, PROXY_NAME_1).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_2, PROXY_NAME_2).unwrap();
 
     let msg = ExecuteMsg::RemoveProxy {
         proxy_addr: PROXY_ADDR_2.to_string(),
@@ -197,9 +214,10 @@ fn test_remove_proxy() {
     assert_eq!(
         res,
         ProxyWhitelistResponse {
-            proxies: vec![
-                PROXY_ADDR_1.to_string() // onlyt proxy 1 should remain
-            ]
+            proxies: vec![ProxyInfoResponse {
+                address: PROXY_ADDR_1.to_string(),
+                provider_name: PROXY_NAME_1.to_string(),
+            },]
         }
     );
 
@@ -236,8 +254,8 @@ fn test_register_source() {
     assert_eq!(err, ContractError::ProxyNotWhitelisted {});
 
     // whitelist the proxy
-    whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
-    whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_1, PROXY_NAME_1).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_2, PROXY_NAME_2).unwrap();
 
     // successful attempt
     execute(deps.as_mut(), mock_env(), owner_info.clone(), msg.clone()).unwrap();
@@ -258,7 +276,13 @@ fn test_register_source() {
         AllSourcesResponse {
             list: vec![SourcesResponse {
                 symbol: "TSLA".to_string(),
-                proxies: vec![(2u8, PROXY_ADDR_1.to_string())]
+                proxies: vec![(
+                    2u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_1.to_string(),
+                        provider_name: PROXY_NAME_1.to_string(),
+                    }
+                )]
             }]
         }
     );
@@ -289,8 +313,20 @@ fn test_register_source() {
             list: vec![SourcesResponse {
                 symbol: "TSLA".to_string(),
                 proxies: vec![
-                    (1u8, PROXY_ADDR_2.to_string()), // new proxy has higher priority
-                    (2u8, PROXY_ADDR_1.to_string())
+                    (
+                        1u8,
+                        ProxyInfoResponse {
+                            address: PROXY_ADDR_2.to_string(),
+                            provider_name: PROXY_NAME_2.to_string(),
+                        }
+                    ), // new proxy has higher priority
+                    (
+                        2u8,
+                        ProxyInfoResponse {
+                            address: PROXY_ADDR_1.to_string(),
+                            provider_name: PROXY_NAME_1.to_string(),
+                        }
+                    )
                 ]
             }]
         }
@@ -311,8 +347,20 @@ fn test_register_source() {
         SourcesResponse {
             symbol: "TSLA".to_string(),
             proxies: vec![
-                (1u8, PROXY_ADDR_2.to_string()), // new proxy has higher priority
-                (2u8, PROXY_ADDR_1.to_string())
+                (
+                    1u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_2.to_string(),
+                        provider_name: PROXY_NAME_2.to_string(),
+                    }
+                ), // new proxy has higher priority
+                (
+                    2u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_1.to_string(),
+                        provider_name: PROXY_NAME_1.to_string(),
+                    }
+                )
             ]
         }
     );
@@ -326,8 +374,8 @@ fn test_remove_source() {
     deps.querier
         .with_proxy_price(&[(&"TSLA".to_string(), &Decimal::one())]);
 
-    whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
-    whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_1, PROXY_NAME_1).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_2, PROXY_NAME_2).unwrap();
 
     register_source(&mut deps, "TSLA", PROXY_ADDR_2, None).unwrap();
     register_source(&mut deps, "TSLA", PROXY_ADDR_1, None).unwrap();
@@ -359,7 +407,13 @@ fn test_remove_source() {
         SourcesResponse {
             symbol: "TSLA".to_string(),
             proxies: vec![
-                (10u8, PROXY_ADDR_2.to_string()), // only proxy 2 remains
+                (
+                    10u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_2.to_string(),
+                        provider_name: PROXY_NAME_2.to_string(),
+                    }
+                ), // only proxy 2 remains
             ]
         }
     );
@@ -389,8 +443,8 @@ fn test_update_priority() {
     deps.querier
         .with_proxy_price(&[(&"TSLA".to_string(), &Decimal::one())]);
 
-    whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
-    whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_1, PROXY_NAME_1).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_2, PROXY_NAME_2).unwrap();
 
     register_source(&mut deps, "TSLA", PROXY_ADDR_2, None).unwrap();
     register_source(&mut deps, "TSLA", PROXY_ADDR_1, None).unwrap();
@@ -410,8 +464,20 @@ fn test_update_priority() {
         SourcesResponse {
             symbol: "TSLA".to_string(),
             proxies: vec![
-                (10u8, PROXY_ADDR_2.to_string()),
-                (10u8, PROXY_ADDR_1.to_string())
+                (
+                    10u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_2.to_string(),
+                        provider_name: PROXY_NAME_2.to_string(),
+                    }
+                ),
+                (
+                    10u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_1.to_string(),
+                        provider_name: PROXY_NAME_1.to_string(),
+                    }
+                )
             ]
         }
     );
@@ -445,8 +511,20 @@ fn test_update_priority() {
         SourcesResponse {
             symbol: "TSLA".to_string(),
             proxies: vec![
-                (2u8, PROXY_ADDR_1.to_string()),
-                (3u8, PROXY_ADDR_2.to_string())
+                (
+                    2u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_1.to_string(),
+                        provider_name: PROXY_NAME_1.to_string(),
+                    }
+                ),
+                (
+                    3u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_2.to_string(),
+                        provider_name: PROXY_NAME_2.to_string(),
+                    }
+                )
             ]
         }
     );
@@ -480,7 +558,7 @@ fn test_symbol_map() {
     deps.querier
         .with_proxy_price(&[(&"TSLA".to_string(), &Decimal::one())]);
 
-    whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_1, PROXY_NAME_1).unwrap();
     register_source(&mut deps, "TSLA", PROXY_ADDR_1, None).unwrap();
 
     let msg = ExecuteMsg::InsertAssetSymbolMap {
@@ -567,7 +645,13 @@ fn test_symbol_map() {
         sources,
         SourcesResponse {
             symbol: "TSLA".to_string(),
-            proxies: vec![(10u8, PROXY_ADDR_1.to_string()),]
+            proxies: vec![(
+                10u8,
+                ProxyInfoResponse {
+                    address: PROXY_ADDR_1.to_string(),
+                    provider_name: PROXY_NAME_1.to_string(),
+                }
+            ),]
         }
     );
 
@@ -616,8 +700,8 @@ fn test_query_pagination() {
         (&"AMZN".to_string(), &Decimal::one()),
     ]);
 
-    whitelist_proxy(&mut deps, PROXY_ADDR_1).unwrap();
-    whitelist_proxy(&mut deps, PROXY_ADDR_2).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_1, PROXY_NAME_1).unwrap();
+    whitelist_proxy(&mut deps, PROXY_ADDR_2, PROXY_NAME_2).unwrap();
 
     register_source(&mut deps, "TSLA", PROXY_ADDR_1, None).unwrap();
     register_source(&mut deps, "AAPL", PROXY_ADDR_2, None).unwrap();
@@ -640,15 +724,33 @@ fn test_query_pagination() {
             list: vec![
                 SourcesResponse {
                     symbol: "AAPL".to_string(),
-                    proxies: vec![(10u8, PROXY_ADDR_2.to_string())]
+                    proxies: vec![(
+                        10u8,
+                        ProxyInfoResponse {
+                            address: PROXY_ADDR_2.to_string(),
+                            provider_name: PROXY_NAME_2.to_string(),
+                        }
+                    )]
                 },
                 SourcesResponse {
                     symbol: "AMZN".to_string(),
-                    proxies: vec![(10u8, PROXY_ADDR_1.to_string())]
+                    proxies: vec![(
+                        10u8,
+                        ProxyInfoResponse {
+                            address: PROXY_ADDR_1.to_string(),
+                            provider_name: PROXY_NAME_1.to_string(),
+                        }
+                    )]
                 },
                 SourcesResponse {
                     symbol: "TSLA".to_string(),
-                    proxies: vec![(10u8, PROXY_ADDR_1.to_string())]
+                    proxies: vec![(
+                        10u8,
+                        ProxyInfoResponse {
+                            address: PROXY_ADDR_1.to_string(),
+                            provider_name: PROXY_NAME_1.to_string(),
+                        }
+                    )]
                 }
             ]
         }
@@ -670,7 +772,13 @@ fn test_query_pagination() {
         AllSourcesResponse {
             list: vec![SourcesResponse {
                 symbol: "AAPL".to_string(),
-                proxies: vec![(10u8, PROXY_ADDR_2.to_string())]
+                proxies: vec![(
+                    10u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_2.to_string(),
+                        provider_name: PROXY_NAME_2.to_string(),
+                    }
+                )]
             },]
         }
     );
@@ -689,7 +797,13 @@ fn test_query_pagination() {
         AllSourcesResponse {
             list: vec![SourcesResponse {
                 symbol: "AMZN".to_string(),
-                proxies: vec![(10u8, PROXY_ADDR_1.to_string())]
+                proxies: vec![(
+                    10u8,
+                    ProxyInfoResponse {
+                        address: PROXY_ADDR_1.to_string(),
+                        provider_name: PROXY_NAME_1.to_string(),
+                    }
+                )]
             },]
         }
     );

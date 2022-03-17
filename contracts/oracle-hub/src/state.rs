@@ -5,7 +5,9 @@ use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
 
 use crate::ContractError;
-use tefi_oracle::hub::{ConfigResponse, ProxyWhitelistResponse, SourcesResponse};
+use tefi_oracle::hub::{
+    ConfigResponse, ProxyInfoResponse, ProxyWhitelistResponse, SourcesResponse,
+};
 
 pub const CONFIG: Item<Config> = Item::new("config");
 // set price sources for each symbol
@@ -40,23 +42,53 @@ impl Config {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct ProxyInfo {
+    pub address: Addr,
+    pub provider_name: String,
+}
+
+impl ProxyInfo {
+    pub fn as_res(&self) -> ProxyInfoResponse {
+        ProxyInfoResponse {
+            address: self.address.to_string(),
+            provider_name: self.provider_name.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct ProxyWhitelist {
-    pub proxies: Vec<Addr>,
+    pub proxies: Vec<ProxyInfo>,
 }
 
 impl ProxyWhitelist {
     pub fn as_res(&self) -> ProxyWhitelistResponse {
         ProxyWhitelistResponse {
-            proxies: self.proxies.iter().map(|addr| addr.to_string()).collect(),
+            proxies: self.proxies.iter().map(|addr| addr.as_res()).collect(),
         }
     }
 
     pub fn is_whitelisted(&self, proxy_addr: &Addr) -> bool {
-        self.proxies.iter().any(|item| item.eq(proxy_addr))
+        self.proxies.iter().any(|item| item.address.eq(proxy_addr))
+    }
+
+    pub fn find_by_addr(&self, proxy_addr: &Addr) -> Result<ProxyInfo, ContractError> {
+        match self
+            .proxies
+            .iter()
+            .find(|wlitem| proxy_addr.eq(&wlitem.address))
+        {
+            Some(info) => Ok(info.clone()),
+            None => Err(ContractError::ProxyNotWhitelisted {}),
+        }
     }
 
     pub fn remove(&mut self, proxy_addr: &Addr) -> Result<(), ContractError> {
-        match self.proxies.iter().position(|item| item.eq(proxy_addr)) {
+        match self
+            .proxies
+            .iter()
+            .position(|item| item.address.eq(proxy_addr))
+        {
             Some(position) => {
                 self.proxies.remove(position);
                 Ok(())
@@ -83,13 +115,19 @@ impl Sources {
         self.proxies.iter().any(|item| item.1.eq(proxy_addr))
     }
 
-    pub fn as_res(&self) -> SourcesResponse {
+    pub fn as_res(&self, whitelist: &ProxyWhitelist) -> SourcesResponse {
         SourcesResponse {
             symbol: self.symbol.to_string(),
             proxies: self
                 .proxies
                 .iter()
-                .map(|item| (item.0, item.1.to_string()))
+                .map(|item| {
+                    let info = whitelist.find_by_addr(&item.1).unwrap_or(ProxyInfo {
+                        address: item.1.clone(),
+                        provider_name: "No longer whitelisted".to_string(),
+                    });
+                    (item.0, info.as_res())
+                })
                 .collect(),
         }
     }

@@ -12,6 +12,9 @@ pub enum ContractError {
     #[error("Sender is not authorized to execute this operation")]
     Unauthorized {},
 
+    #[error("Provider name character count must be between 3 and 20")]
+    InvalidProviderName {},
+
     #[error("The proxy is not registered as a source for this asset")]
     ProxyNotRegistered {},
 

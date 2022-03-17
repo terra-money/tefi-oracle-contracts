@@ -1,5 +1,7 @@
 use crate::{
-    state::{Config, ProxyWhitelist, Sources, ASSET_SYMBOL_MAP, CONFIG, SOURCES, WHITELIST},
+    state::{
+        Config, ProxyInfo, ProxyWhitelist, Sources, ASSET_SYMBOL_MAP, CONFIG, SOURCES, WHITELIST,
+    },
     ContractError,
 };
 use cosmwasm_std::{Addr, DepsMut, MessageInfo, Response};
@@ -222,6 +224,7 @@ pub fn whitelist_proxy(
     deps: DepsMut,
     info: MessageInfo,
     proxy_addr: String,
+    provider_name: String,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -229,6 +232,9 @@ pub fn whitelist_proxy(
         return Err(ContractError::Unauthorized {});
     }
 
+    if !is_valid_provider_name(&provider_name) {
+        return Err(ContractError::InvalidProviderName {});
+    }
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
     let mut whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
 
@@ -242,7 +248,10 @@ pub fn whitelist_proxy(
         });
     }
 
-    whitelist.proxies.push(proxy_addr);
+    whitelist.proxies.push(ProxyInfo {
+        address: proxy_addr,
+        provider_name,
+    });
 
     WHITELIST.save(deps.storage, &whitelist)?;
 
@@ -292,4 +301,15 @@ pub fn insert_asset_symbol_map(
     }
 
     Ok(Response::default())
+}
+
+// Helper functions
+
+/// check if the provider_name is valid
+fn is_valid_provider_name(provider_name: &str) -> bool {
+    let bytes = provider_name.as_bytes();
+    if bytes.len() < 3 || bytes.len() > 20 {
+        return false;
+    }
+    true
 }

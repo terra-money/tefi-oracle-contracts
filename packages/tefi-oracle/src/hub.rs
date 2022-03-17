@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use cosmwasm_std::Decimal;
 
 pub const DEFAULT_PRIORITY: u8 = 10;
-pub const MAX_WHITELISTED_PROXIES: u8 = 30;
+pub const MAX_WHITELISTED_PROXIES: u8 = 15;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -39,7 +39,10 @@ pub enum HubExecuteMsg {
     RemoveSource { symbol: String, proxy_addr: String },
     /// Whitelists a new proxy in hub. After a proxy is whitelisted
     /// it can be registered as a source
-    WhitelistProxy { proxy_addr: String },
+    WhitelistProxy {
+        proxy_addr: String,
+        provider_name: String,
+    },
     /// Removes a proxy from the whitelist
     RemoveProxy { proxy_addr: String },
     /// Updates the map of `asset_token` to `symbol`
@@ -107,6 +110,7 @@ pub struct PriceResponse {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum PriceQueryResult {
     Success(PriceResponse),
     Fail,
@@ -114,13 +118,13 @@ pub enum PriceQueryResult {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct PriceListResponse {
-    pub price_list: Vec<(u8, PriceQueryResult)>, // (priority, result)
+    pub price_list: Vec<(u8, ProxyInfoResponse, PriceQueryResult)>, // (priority, proxy_info, result)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct SourcesResponse {
     pub symbol: String,
-    pub proxies: Vec<(u8, String)>,
+    pub proxies: Vec<(u8, ProxyInfoResponse)>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -139,7 +143,13 @@ impl From<crate::proxy::ProxyPriceResponse> for PriceResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct ProxyWhitelistResponse {
-    pub proxies: Vec<String>,
+    pub proxies: Vec<ProxyInfoResponse>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ProxyInfoResponse {
+    pub address: String,
+    pub provider_name: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
