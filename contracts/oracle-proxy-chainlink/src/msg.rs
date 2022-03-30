@@ -16,11 +16,11 @@ pub enum ExecuteMsg {
     },
     /// Registers new sources, overwrites if already exists
     SetSources {
-        sources: Vec<(String, String)>, // (asset, source)
+        sources: Vec<(String, String)>, // (symbol, source)
     },
     /// Removes an existing source
     RemoveSource {
-        asset_token: String,
+        symbol: String,
     },
 }
 
@@ -29,7 +29,7 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     Base(ProxyQueryMsg),
     Config {},
-    Sources { asset_token: Option<String> },
+    Sources { symbol: Option<String> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

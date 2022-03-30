@@ -48,18 +48,18 @@ pub fn execute(
     match msg {
         ExecuteMsg::UpdateOwner { owner } => update_owner(deps, info, owner),
         ExecuteMsg::SetSources { sources } => set_sources(deps, info, sources),
-        ExecuteMsg::RemoveSource { asset_token } => remove_source(deps, info, asset_token),
+        ExecuteMsg::RemoveSource { symbol } => remove_source(deps, info, symbol),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     let res = match msg {
-        QueryMsg::Sources { asset_token } => to_binary(&query_sources(deps, asset_token)?),
+        QueryMsg::Sources { symbol } => to_binary(&query_sources(deps, symbol)?),
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         // Implementation of the queries required by proxy contract standard
         QueryMsg::Base(proxy_msg) => match proxy_msg {
-            ProxyQueryMsg::Price { asset_token } => to_binary(&query_price(deps, asset_token)?),
+            ProxyQueryMsg::Price { symbol } => to_binary(&query_price(deps, symbol)?),
         },
     };
 
@@ -70,8 +70,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner address
-/// @param owner : New owner address
+/// Updates the owner address
 pub fn update_owner(
     deps: DepsMut,
     info: MessageInfo,
@@ -91,8 +90,7 @@ pub fn update_owner(
     Ok(Response::default())
 }
 
-/// @dev Registers Chainlink price sources
-/// @param sources : Array of mappings (asset_token, chainlink_source)
+/// Registers Chainlink price sources
 pub fn set_sources(
     deps: DepsMut,
     info: MessageInfo,
@@ -104,22 +102,20 @@ pub fn set_sources(
         return Err(ContractError::Unauthorized {});
     }
 
-    for (asset_token, source) in sources {
-        let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
+    for (symbol, source) in sources {
         let source: Addr = deps.api.addr_validate(&source)?;
 
-        SOURCES.save(deps.storage, &asset_token, &source)?;
+        SOURCES.save(deps.storage, symbol.as_bytes(), &source)?;
     }
 
     Ok(Response::default())
 }
 
-/// @dev Removes an existing Chainlink price source for an asset_token
-/// @param asset_token : Address of the asset_token to remove
+/// Removes an existing Chainlink price source for an asset_token
 pub fn remove_source(
     deps: DepsMut,
     info: MessageInfo,
-    asset_token: String,
+    symbol: String,
 ) -> Result<Response, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
 
@@ -127,8 +123,7 @@ pub fn remove_source(
         return Err(ContractError::Unauthorized {});
     }
 
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-    SOURCES.remove(deps.storage, &asset_token);
+    SOURCES.remove(deps.storage, symbol.as_bytes());
 
     Ok(Response::default())
 }
@@ -137,37 +132,34 @@ pub fn remove_source(
 /// Query implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Queries the contract configuration
+/// Queries the contract configuration
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
 
     Ok(config.as_res())
 }
 
-/// @dev Queries the registered Chainlink prices sources
-/// @param asset_token : (Optional) Asset token address, if not provided, returns all sources
-pub fn query_sources(
-    deps: Deps,
-    asset_token: Option<String>,
-) -> Result<SourcesResponse, ContractError> {
-    let sources: Vec<(String, String)> = match asset_token {
-        Some(asset_token) => {
-            let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-            let source = SOURCES.load(deps.storage, &asset_token).map_err(|_| {
+/// Queries the registered Chainlink prices sources
+/// ## Parameters
+/// * `symbol` - (Optional) Asset symbol, if not provided, returns all sources
+pub fn query_sources(deps: Deps, symbol: Option<String>) -> Result<SourcesResponse, ContractError> {
+    let sources: Vec<(String, String)> = match symbol {
+        Some(symbol) => {
+            let source = SOURCES.load(deps.storage, symbol.as_bytes()).map_err(|_| {
                 ContractError::ProxyError {
                     reason: "Price source not registered".to_string(),
                 }
             })?;
 
-            vec![(asset_token.to_string(), source.to_string())]
+            vec![(symbol, source.to_string())]
         }
         None => SOURCES
             .range(deps.storage, None, None, Order::Ascending)
             .map(|item| {
                 let (k, v) = item.unwrap();
-                let asset_token = deserialize_key::<Addr>(k).unwrap();
+                let symbol = deserialize_key::<String>(k).unwrap();
 
-                (asset_token.to_string(), v.to_string())
+                (symbol, v.to_string())
             })
             .collect(),
     };
@@ -175,14 +167,11 @@ pub fn query_sources(
     Ok(SourcesResponse { sources })
 }
 
-/// @dev Queries last price feed for the asset_token by fetching from Chainlink source and converts to standard format
-/// @param asset_token : Asset token address
-pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse, ContractError> {
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-
+/// Queries last price feed for the symbol by fetching from Chainlink source and converts to standard format
+pub fn query_price(deps: Deps, symbol: String) -> Result<ProxyPriceResponse, ContractError> {
     let source: Addr =
         SOURCES
-            .load(deps.storage, &asset_token)
+            .load(deps.storage, symbol.as_bytes())
             .map_err(|_| ContractError::ProxyError {
                 reason: "Price source not registered".to_string(),
             })?;

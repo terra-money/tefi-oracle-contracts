@@ -1,18 +1,15 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Order, QueryRequest,
-    Response, Uint128, WasmQuery,
+    to_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response,
+    Uint128, WasmQuery,
 };
 
 use cw2::set_contract_version;
-use tefi_oracle::de::deserialize_key;
 use tefi_oracle::proxy::{ProxyPriceResponse, ProxyQueryMsg};
 
-use crate::msg::{
-    BandMsg, BandResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, SymbolMapResponse,
-};
-use crate::state::{Config, CONFIG, SYMBOLS};
+use crate::msg::{BandMsg, BandResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::state::{Config, CONFIG};
 use crate::ContractError;
 
 // version info for migration info
@@ -46,13 +43,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::UpdateOwner { owner } => update_owner(deps, info, owner),
-        ExecuteMsg::SetSymbolMapping {
-            asset_token,
-            symbol,
-        } => set_symbol_mapping(deps, info, asset_token, symbol),
-        ExecuteMsg::RemoveSymbolMapping { asset_token } => {
-            remove_symbol_mapping(deps, info, asset_token)
+        ExecuteMsg::UpdateConfig { owner, source_addr } => {
+            update_config(deps, info, owner, source_addr)
         }
     }
 }
@@ -61,10 +53,9 @@ pub fn execute(
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     let res = match msg {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::SymbolMap { asset_token } => to_binary(&query_symbol_map(deps, asset_token)?),
         // Implementation of the queries required by proxy contract standard
         QueryMsg::Base(proxy_msg) => match proxy_msg {
-            ProxyQueryMsg::Price { asset_token } => to_binary(&query_price(deps, asset_token)?),
+            ProxyQueryMsg::Price { symbol } => to_binary(&query_price(deps, symbol)?),
         },
     };
 
@@ -75,12 +66,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
 /// Execute implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Updates the owner address
-/// @param owner : New owner address
-pub fn update_owner(
+/// Updates the `owner` address or `soruce_addr`
+pub fn update_config(
     deps: DepsMut,
     info: MessageInfo,
-    owner: String,
+    owner: Option<String>,
+    source_addr: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut config: Config = CONFIG.load(deps.storage)?;
 
@@ -88,53 +79,17 @@ pub fn update_owner(
         return Err(ContractError::Unauthorized {});
     }
 
-    let owner_addr: Addr = deps.api.addr_validate(&owner)?;
-    config.owner = owner_addr;
+    if let Some(owner) = owner {
+        let owner_addr: Addr = deps.api.addr_validate(&owner)?;
+        config.owner = owner_addr;
+    }
+
+    if let Some(source_addr) = source_addr {
+        let source_addr: Addr = deps.api.addr_validate(&source_addr)?;
+        config.source_addr = source_addr;
+    }
 
     CONFIG.save(deps.storage, &config)?;
-
-    Ok(Response::default())
-}
-
-/// @dev Registers a new asset_token/symbol mapping
-/// @param asset_token : Asset token address
-/// @param symbol : Symbol that identifies the asset on Band Protocol price source
-pub fn set_symbol_mapping(
-    deps: DepsMut,
-    info: MessageInfo,
-    asset_token: String,
-    symbol: String,
-) -> Result<Response, ContractError> {
-    let config: Config = CONFIG.load(deps.storage)?;
-
-    if !config.is_owner(&info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-
-    // overwrite if exists
-    SYMBOLS.save(deps.storage, &asset_token, &symbol)?;
-
-    Ok(Response::default())
-}
-
-/// @dev Removes an existing asset_token/symbol mapping
-/// @param asset_token : Asset token address to remove
-pub fn remove_symbol_mapping(
-    deps: DepsMut,
-    info: MessageInfo,
-    asset_token: String,
-) -> Result<Response, ContractError> {
-    let config: Config = CONFIG.load(deps.storage)?;
-
-    if !config.is_owner(&info.sender) {
-        return Err(ContractError::Unauthorized {});
-    }
-
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-
-    SYMBOLS.remove(deps.storage, &asset_token);
 
     Ok(Response::default())
 }
@@ -143,56 +98,16 @@ pub fn remove_symbol_mapping(
 /// Query implementations
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-/// @dev Queries the contract configuration
+/// Queries the contract configuration
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
     Ok(config.as_res())
 }
 
-/// @dev Queries the asset_token/symbol map
-/// @param asset_token : (Optional) To query the map for a single asset
-pub fn query_symbol_map(
-    deps: Deps,
-    asset_token: Option<String>,
-) -> Result<SymbolMapResponse, ContractError> {
-    let map: Vec<(String, String)> = match asset_token {
-        Some(asset_token) => {
-            let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-            let symbol = SYMBOLS.load(deps.storage, &asset_token).map_err(|_| {
-                ContractError::ProxyError {
-                    reason: "Symbol not registered".to_string(),
-                }
-            })?;
-
-            vec![(asset_token.to_string(), symbol)]
-        }
-        None => SYMBOLS
-            .range(deps.storage, None, None, Order::Ascending)
-            .map(|item| {
-                let (k, v) = item.unwrap();
-                let asset_token = deserialize_key::<Addr>(k).unwrap();
-
-                (asset_token.to_string(), v)
-            })
-            .collect(),
-    };
-
-    Ok(SymbolMapResponse { map })
-}
-
-/// @dev Queries the price by fetching it from Band source using the previously mapped symbol and converts to the standard format
-/// @param asset_token : Asset token address
-pub fn query_price(deps: Deps, asset_token: String) -> Result<ProxyPriceResponse, ContractError> {
+/// Queries the price by fetching it from Band source using the previously mapped symbol and converts to the standard format
+pub fn query_price(deps: Deps, symbol: String) -> Result<ProxyPriceResponse, ContractError> {
     let config: Config = CONFIG.load(deps.storage)?;
-    let asset_token: Addr = deps.api.addr_validate(&asset_token)?;
-
-    let symbol: String =
-        SYMBOLS
-            .load(deps.storage, &asset_token)
-            .map_err(|_| ContractError::ProxyError {
-                reason: "Symbol not registered".to_string(),
-            })?;
 
     let res: BandResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr: config.source_addr.to_string(),

@@ -6,12 +6,14 @@ use cw2::set_contract_version;
 use tefi_oracle::hub::{HubExecuteMsg, HubQueryMsg, InstantiateMsg};
 
 use crate::handle::{
-    register_proxy, remove_proxy, update_max_proxies, update_owner, update_priority,
+    bulk_register_source, insert_asset_symbol_map, register_source, remove_proxy, remove_source,
+    update_max_proxies, update_owner, update_source_priority_list, whitelist_proxy,
 };
 use crate::query::{
-    query_config, query_legacy_price, query_price, query_price_list, query_proxy_list,
+    query_all_sources, query_asset_symbol_map, query_check_source, query_config, query_price,
+    query_price_list, query_proxy_whitelist, query_sources,
 };
-use crate::state::{Config, CONFIG};
+use crate::state::{Config, ProxyWhitelist, CONFIG, WHITELIST};
 use crate::ContractError;
 
 // version info for migration info
@@ -30,9 +32,11 @@ pub fn instantiate(
     let config = Config {
         owner: deps.api.addr_validate(&msg.owner)?,
         base_denom: msg.base_denom,
-        max_proxies_per_asset: msg.max_proxies_per_asset,
+        max_proxies_per_symbol: msg.max_proxies_per_symbol,
     };
     CONFIG.save(deps.storage, &config)?;
+
+    WHITELIST.save(deps.storage, &ProxyWhitelist { proxies: vec![] })?;
 
     Ok(Response::default())
 }
@@ -47,22 +51,27 @@ pub fn execute(
     match msg {
         HubExecuteMsg::UpdateOwner { owner } => update_owner(deps, info, owner),
         HubExecuteMsg::UpdateMaxProxies {
-            max_proxies_per_asset,
-        } => update_max_proxies(deps, info, max_proxies_per_asset),
-        HubExecuteMsg::RegisterProxy {
-            asset_token,
+            max_proxies_per_symbol,
+        } => update_max_proxies(deps, info, max_proxies_per_symbol),
+        HubExecuteMsg::RegisterSource {
+            symbol,
             proxy_addr,
             priority,
-        } => register_proxy(deps, info, asset_token, proxy_addr, priority),
-        HubExecuteMsg::UpdatePriority {
-            asset_token,
+        } => register_source(deps, info, symbol, proxy_addr, priority),
+        HubExecuteMsg::BulkRegisterSource { sources } => bulk_register_source(deps, info, sources),
+        HubExecuteMsg::UpdateSourcePriorityList {
+            symbol,
+            priority_list,
+        } => update_source_priority_list(deps, info, symbol, priority_list),
+        HubExecuteMsg::RemoveSource { symbol, proxy_addr } => {
+            remove_source(deps, info, symbol, proxy_addr)
+        }
+        HubExecuteMsg::WhitelistProxy {
             proxy_addr,
-            priority,
-        } => update_priority(deps, info, asset_token, proxy_addr, priority),
-        HubExecuteMsg::RemoveProxy {
-            asset_token,
-            proxy_addr,
-        } => remove_proxy(deps, info, asset_token, proxy_addr),
+            provider_name,
+        } => whitelist_proxy(deps, info, proxy_addr, provider_name),
+        HubExecuteMsg::RemoveProxy { proxy_addr } => remove_proxy(deps, info, proxy_addr),
+        HubExecuteMsg::InsertAssetSymbolMap { map } => insert_asset_symbol_map(deps, info, map),
     }
 }
 
@@ -70,14 +79,34 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: HubQueryMsg) -> Result<Binary, ContractError> {
     let res = match msg {
         HubQueryMsg::Config {} => to_binary(&query_config(deps)?),
-        HubQueryMsg::ProxyList { asset_token } => to_binary(&query_proxy_list(deps, asset_token)?),
+        HubQueryMsg::ProxyWhitelist {} => to_binary(&query_proxy_whitelist(deps)?),
+        HubQueryMsg::Sources { asset_token } => {
+            to_binary(&query_sources(deps, Some(asset_token), None)?)
+        }
+        HubQueryMsg::SourcesBySymbol { symbol } => {
+            to_binary(&query_sources(deps, None, Some(symbol))?)
+        }
         HubQueryMsg::Price {
             asset_token,
             timeframe,
-        } => to_binary(&query_price(deps, env, asset_token, timeframe)?),
-        HubQueryMsg::PriceList { asset_token } => to_binary(&query_price_list(deps, asset_token)?),
-        HubQueryMsg::LegacyPrice { base, quote } => {
-            to_binary(&query_legacy_price(deps, base, quote)?)
+        } => to_binary(&query_price(deps, env, Some(asset_token), None, timeframe)?),
+        HubQueryMsg::PriceBySymbol { symbol, timeframe } => {
+            to_binary(&query_price(deps, env, None, Some(symbol), timeframe)?)
+        }
+        HubQueryMsg::PriceList { asset_token } => {
+            to_binary(&query_price_list(deps, Some(asset_token), None)?)
+        }
+        HubQueryMsg::PriceListBySymbol { symbol } => {
+            to_binary(&query_price_list(deps, None, Some(symbol))?)
+        }
+        HubQueryMsg::AssetSymbolMap { start_after, limit } => {
+            to_binary(&query_asset_symbol_map(deps, start_after, limit)?)
+        }
+        HubQueryMsg::AllSources { start_after, limit } => {
+            to_binary(&query_all_sources(deps, start_after, limit)?)
+        }
+        HubQueryMsg::CheckSource { proxy_addr, symbol } => {
+            to_binary(&query_check_source(deps, proxy_addr, symbol)?)
         }
     };
 

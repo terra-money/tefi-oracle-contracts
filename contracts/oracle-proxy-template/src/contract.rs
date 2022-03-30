@@ -37,9 +37,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         // Implementation of the queries required by proxy contract standard
         QueryMsg::Base(proxy_msg) => match proxy_msg {
-            ProxyQueryMsg::Price { asset_token } => {
-                to_binary(&query_price(deps, env, asset_token)?)
-            }
+            ProxyQueryMsg::Price { symbol } => to_binary(&query_price(deps, env, symbol)?),
         },
     };
 
@@ -52,7 +50,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     Ok(config.as_res())
 }
 
-pub fn query_price(_deps: Deps, _env: Env, _asset_token: String) -> StdResult<ProxyPriceResponse> {
+pub fn query_price(_deps: Deps, _env: Env, _symbol: String) -> StdResult<ProxyPriceResponse> {
     // fetch the price from the corresponding source and convert to the standard format
     // pub struct ProxyPriceResponse {
     //     pub rate: Decimal, // rate denominated in base_denom

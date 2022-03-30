@@ -7,7 +7,7 @@ use cw_storage_plus::{Item, Map};
 use crate::msg::ConfigResponse;
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const SOURCES: Map<&Addr, Addr> = Map::new("sources");
+pub const SOURCES: Map<&[u8], Addr> = Map::new("sources");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {
@@ -21,8 +21,7 @@ impl Config {
         }
     }
 
-    /// @dev Checks if the provided addr is owner
-    /// @param addr : address to check
+    /// Checks if the provided addr is owner
     pub fn is_owner(&self, addr: &Addr) -> bool {
         self.owner.eq(addr)
     }

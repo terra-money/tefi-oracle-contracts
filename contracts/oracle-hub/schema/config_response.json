@@ -4,14 +4,14 @@
   "type": "object",
   "required": [
     "base_denom",
-    "max_proxies_per_asset",
+    "max_proxies_per_symbol",
     "owner"
   ],
   "properties": {
     "base_denom": {
       "type": "string"
     },
-    "max_proxies_per_asset": {
+    "max_proxies_per_symbol": {
       "type": "integer",
       "format": "uint8",
       "minimum": 0.0

@@ -1,24 +1,18 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "ProxyListResponse",
+  "title": "AssetSymbolMapResponse",
   "type": "object",
   "required": [
-    "asset_token",
-    "proxies"
+    "map"
   ],
   "properties": {
-    "asset_token": {
-      "type": "string"
-    },
-    "proxies": {
+    "map": {
       "type": "array",
       "items": {
         "type": "array",
         "items": [
           {
-            "type": "integer",
-            "format": "uint8",
-            "minimum": 0.0
+            "type": "string"
           },
           {
             "type": "string"

@@ -2,12 +2,11 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::Addr;
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::Item;
 
 use crate::msg::ConfigResponse;
 
 pub const CONFIG: Item<Config> = Item::new("config");
-pub const SYMBOLS: Map<&Addr, String> = Map::new("symbols");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {
@@ -25,8 +24,7 @@ impl Config {
         }
     }
 
-    /// @dev Checks if the provided addr is owner
-    /// @param addr : address to check
+    /// Checks if the provided `addr` is owner
     pub fn is_owner(&self, addr: &Addr) -> bool {
         self.owner.eq(addr)
     }
