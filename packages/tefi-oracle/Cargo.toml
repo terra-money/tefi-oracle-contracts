@@ -13,6 +13,9 @@ opt-level = 3
 debug = false
 debug-assertions = false
 
+[features]
+internal = []
+
 [dependencies]
 cosmwasm-std = { version = "0.16.2" }
 schemars = "0.8.1"
