@@ -4,6 +4,8 @@ version = "0.2.0"
 authors = ["Terraform Labs, PTE."]
 edition = "2018"
 description = "Common TeFi oracle types"
+license = "Apache-2.0"
+repository = "https://github.com/terra-money/tefi-oracle-contracts"
 
 [profile.release]
 rpath = false
