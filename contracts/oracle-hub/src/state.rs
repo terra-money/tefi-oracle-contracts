@@ -11,11 +11,11 @@ use tefi_oracle::hub::{
 
 pub const CONFIG: Item<Config> = Item::new("config");
 // set price sources for each symbol
-pub const SOURCES: Map<&[u8], Sources> = Map::new("sources");
+pub const SOURCES: Map<Vec<u8>, Sources> = Map::new("sources");
 // whitelist of proxies that can be added as sources
 pub const WHITELIST: Item<ProxyWhitelist> = Item::new("whitelist");
 // map of asset cw20 contract addresses to symbol
-pub const ASSET_SYMBOL_MAP: Map<&[u8], String> = Map::new("asset_symbol_map");
+pub const ASSET_SYMBOL_MAP: Map<Vec<u8>, String> = Map::new("asset_symbol_map");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {

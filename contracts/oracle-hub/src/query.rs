@@ -44,7 +44,7 @@ pub fn query_sources(
         None => {
             if let Some(asset_token) = asset_token {
                 ASSET_SYMBOL_MAP
-                    .load(deps.storage, asset_token.as_bytes())
+                    .load(deps.storage, asset_token.into_bytes())
                     .map_err(|_| ContractError::MappingNotFound {})?
             } else {
                 return Err(ContractError::Std(StdError::generic_err(
@@ -55,7 +55,7 @@ pub fn query_sources(
     };
 
     let sources_list: Sources = SOURCES
-        .load(deps.storage, symbol.as_bytes())
+        .load(deps.storage, symbol.into_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
     let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
 
@@ -76,7 +76,7 @@ pub fn query_price(
         None => {
             if let Some(asset_token) = asset_token {
                 ASSET_SYMBOL_MAP
-                    .load(deps.storage, asset_token.as_bytes())
+                    .load(deps.storage, asset_token.into_bytes())
                     .map_err(|_| ContractError::MappingNotFound {})?
             } else {
                 // internal error, should never happen
@@ -88,7 +88,7 @@ pub fn query_price(
     };
 
     let sources: Sources = SOURCES
-        .load(deps.storage, symbol.as_bytes())
+        .load(deps.storage, symbol.clone().into_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     let time_threshold = match timeframe {
@@ -124,7 +124,7 @@ pub fn query_price_list(
         Some(v) => v,
         None => {
             if let Some(asset_token) = asset_token {
-                ASSET_SYMBOL_MAP.load(deps.storage, asset_token.as_bytes())?
+                ASSET_SYMBOL_MAP.load(deps.storage, asset_token.into_bytes())?
             } else {
                 return Err(ContractError::Std(StdError::generic_err(
                     "symbol or asset_token must be provided",
@@ -134,7 +134,7 @@ pub fn query_price_list(
     };
 
     let sources: Sources = SOURCES
-        .load(deps.storage, symbol.as_bytes())
+        .load(deps.storage, symbol.clone().into_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
     let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
 
@@ -167,7 +167,7 @@ pub fn query_asset_symbol_map(
     let limit = limit
         .unwrap_or(DEFAULT_PAGINATION_LIMIT)
         .min(MAX_PAGINATION_LIMIT) as usize;
-    let start = start_after.map(|addr| Bound::exclusive(addr.as_bytes()));
+    let start = start_after.map(|addr| Bound::exclusive(addr.into_bytes()));
 
     let map: Vec<(String, String)> = ASSET_SYMBOL_MAP
         .range(deps.storage, start, None, Order::Ascending)
@@ -191,7 +191,7 @@ pub fn query_all_sources(
     let limit = limit
         .unwrap_or(DEFAULT_PAGINATION_LIMIT)
         .min(MAX_PAGINATION_LIMIT) as usize;
-    let start = start_after.map(|symbol| Bound::exclusive(symbol.as_bytes()));
+    let start = start_after.map(|symbol| Bound::exclusive(symbol.into_bytes()));
 
     let whitelist: ProxyWhitelist = WHITELIST.load(deps.storage)?;
     let list: Vec<SourcesResponse> = SOURCES

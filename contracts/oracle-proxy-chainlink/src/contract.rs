@@ -1,10 +1,7 @@
-use cosmwasm_bignumber::{Decimal256, Uint256};
+use std::str::FromStr;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, QueryRequest, Response,
-    StdResult, WasmQuery,
-};
+use cosmwasm_std::{to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order, QueryRequest, Response, StdResult, WasmQuery, Decimal256, Uint256, Decimal};
 
 use cw2::set_contract_version;
 use tefi_oracle::de::deserialize_key;
@@ -194,8 +191,12 @@ pub fn query_price(deps: Deps, symbol: String) -> Result<ProxyPriceResponse, Con
         Uint256::from(1e8 as u128),
     );
 
+    let mut rate_string = parsed_rate.to_string();
+    rate_string.truncate(20);
+    let parsed_rate = Decimal::from_str(rate_string.as_str())?;
+
     Ok(ProxyPriceResponse {
-        rate: parsed_rate.into(),
+        rate: parsed_rate,
         last_updated: res.updated_at.unwrap(),
     })
 }

@@ -73,7 +73,7 @@ pub fn register_source(
     }
 
     let mut sources: Sources = SOURCES
-        .load(deps.storage, symbol.as_bytes())
+        .load(deps.storage, symbol.clone().into_bytes())
         .unwrap_or(Sources {
             symbol: symbol.clone(),
             proxies: vec![],
@@ -97,7 +97,7 @@ pub fn register_source(
     // sort before storing
     sources.sort_by_priority();
 
-    SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
+    SOURCES.save(deps.storage, symbol.into_bytes(), &sources)?;
 
     Ok(Response::default())
 }
@@ -127,7 +127,7 @@ pub fn bulk_register_source(
 
         let mut sources: Sources =
             SOURCES
-                .load(deps.storage, symbol.as_bytes())
+                .load(deps.storage, symbol.clone().into_bytes())
                 .unwrap_or(Sources {
                     symbol: symbol.clone(),
                     proxies: vec![],
@@ -147,7 +147,7 @@ pub fn bulk_register_source(
         // sort before storing
         sources.sort_by_priority();
 
-        SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
+        SOURCES.save(deps.storage, symbol.into_bytes(), &sources)?;
     }
 
     Ok(Response::default())
@@ -167,7 +167,7 @@ pub fn update_source_priority_list(
     }
 
     let mut sources: Sources = SOURCES
-        .load(deps.storage, symbol.as_bytes())
+        .load(deps.storage, symbol.clone().into_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     // check for duplicates in the input priority list
@@ -187,7 +187,7 @@ pub fn update_source_priority_list(
     // sort before storing
     sources.sort_by_priority();
 
-    SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
+    SOURCES.save(deps.storage, symbol.into_bytes(), &sources)?;
 
     Ok(Response::default())
 }
@@ -208,12 +208,12 @@ pub fn remove_source(
     let proxy_addr: Addr = deps.api.addr_validate(&proxy_addr)?;
 
     let mut sources: Sources = SOURCES
-        .load(deps.storage, symbol.as_bytes())
+        .load(deps.storage, symbol.clone().into_bytes())
         .map_err(|_| ContractError::SymbolNotRegistered {})?;
 
     sources.remove(&proxy_addr)?;
 
-    SOURCES.save(deps.storage, symbol.as_bytes(), &sources)?;
+    SOURCES.save(deps.storage, symbol.into_bytes(), &sources)?;
 
     Ok(Response::default())
 }
@@ -297,7 +297,7 @@ pub fn insert_asset_symbol_map(
 
     for item in map {
         deps.api.addr_validate(&item.0)?;
-        ASSET_SYMBOL_MAP.save(deps.storage, item.0.as_bytes(), &item.1)?;
+        ASSET_SYMBOL_MAP.save(deps.storage, item.0.into_bytes(), &item.1)?;
     }
 
     Ok(Response::default())
