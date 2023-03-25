@@ -438,6 +438,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "oracle-proxy-candle"
+version = "0.2.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "schemars",
+ "serde",
+ "tefi-oracle",
+ "thiserror",
+]
+
+[[package]]
 name = "oracle-proxy-chainlink"
 version = "0.2.0"
 dependencies = [
